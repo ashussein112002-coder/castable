@@ -440,3 +440,12 @@ button.primary:hover, .demo:hover, .btn.amber:hover { background: #e6ff66; box-s
 .orb.a { width: 120px; height: 120px; left: 5vw; top: 58vh; } .orb.b { width: 76px; height: 76px; right: 9vw; top: 18vh; animation-delay: -5s; animation-duration: 18s; } .orb.c { width: 48px; height: 48px; right: 24vw; bottom: 16vh; animation-delay: -9s; animation-duration: 11s; }
 @keyframes float { 0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); } 33% { transform: translate3d(18px, -26px, 0) rotate(4deg); } 66% { transform: translate3d(-14px, 16px, 0) rotate(-3deg); } }
 @media (max-width: 760px) { .orb { display: none; } .intro h1 { font-size: 40px; } }
+
+/* how it works — three glass steps */
+.how3 { list-style: none; margin: 26px auto 0; padding: 0; max-width: 1040px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; text-align: left; }
+.how3 li { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 12px; row-gap: 2px; align-items: baseline; padding: 16px 18px; border-radius: 20px; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .14); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .22); }
+.how3 b { grid-row: 1 / span 2; font: 800 12px var(--mono); color: var(--amber); letter-spacing: .1em; padding-top: 3px; }
+.how3 strong { font: 700 15.5px var(--sans); letter-spacing: -.01em; color: #fff; }
+.how3 span { font-size: 13.5px; line-height: 1.45; color: var(--text-2); }
+@media (prefers-reduced-motion: no-preference) { .how3 li { animation: rise .8s cubic-bezier(.2, .8, .2, 1) both; } .how3 li:nth-child(2) { animation-delay: .1s; } .how3 li:nth-child(3) { animation-delay: .2s; } }
+@media (max-width: 760px) { .how3 { grid-template-columns: 1fr; } }

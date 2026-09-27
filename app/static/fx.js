@@ -89,10 +89,7 @@
     var el = doc.getElementById('intro');
     if (!el) return done();
     var force = params.get('intro');
-    var seen = false;
-    try { seen = sessionStorage.getItem('castable_intro') === '1'; } catch (e) {}
-    if (reduced || force === '0' || (seen && force !== '1')) { el.remove(); return done(); }
-    try { sessionStorage.setItem('castable_intro', '1'); } catch (e) {}
+    if (reduced || force === '0') { el.remove(); return done(); }
     root.classList.add('introing');
     var finished = false;
     function finish() {

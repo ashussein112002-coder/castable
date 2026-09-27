@@ -36,16 +36,14 @@
       const led = r.ledger || {};
       let host = "";
       try { host = new URL(r.oriane_base_url).host; } catch (e) { host = r.oriane_base_url || ""; }
-      const pills = [
-        `<span class="pill mode ${esc(r.mode)}" title="Pipeline mode">${esc((r.mode || "?").toUpperCase())}</span>`,
-        `<span class="pill" title="Oriane endpoint: ${esc(r.oriane_base_url)}">Oriane key <b class="${r.oriane_key_present ? "ok" : "bad"}">${r.oriane_key_present ? "✓" : "✗"}</b></span>`,
-      ];
-      if (host && !/oriane\.xyz$/.test(host)) pills.push(`<span class="pill" title="Oriane base URL">endpoint <b>${esc(host)}</b></span>`);
-      pills.push(`<span class="pill" title="LLM backend used for brief enrichment and casting judgment">LLM <b>${esc(r.llm)}</b></span>`);
-      pills.push(`<span class="pill" title="Append-only credit ledger: results fetched live from Oriane">credits used <b>${fmt(led.live_results_total)}</b> results · <b>${fmt(led.live_calls)}</b> calls</span>`);
-      $("status").innerHTML = pills.join("");
+      const live = r.mode === "live";
+      $("status").innerHTML = `<span class="pill mode ${esc(r.mode)}" title="${live ? "Reading real Instagram and TikTok videos through Oriane Connect" : "Sample data: bundled mock of the Oriane API"}">${live ? "LIVE · via Oriane" : "SAMPLE DATA"}</span>`;
+      const sys = [`Oriane key ${r.oriane_key_present ? "✓" : "✗"}`];
+      if (host && !/oriane\.xyz$/.test(host)) sys.push(`endpoint ${esc(host)}`);
+      sys.push(`pitch writer ${esc(r.llm)}`, `credits used ${fmt(led.live_results_total)} results · ${fmt(led.live_calls)} calls`);
+      window.__sys = sys.join(" · ");
       const b = r.budget || {};
-      $("foot").textContent = `Budget guard: ≤${b.max_results_per_run} results/run · discovery ${b.discovery_limit} · vet top ${b.vet_top_k} × ${b.videos_per_creator} videos (full projection)`;
+      $("foot").textContent = `${window.__sys} · budget guard ≤${b.max_results_per_run} results/run · discovery ${b.discovery_limit} · vet top ${b.vet_top_k} × ${b.videos_per_creator} videos`;
     } catch (e) {
       $("status").innerHTML = `<span class="pill mode offline">server unreachable</span>`;
     }
