@@ -9,11 +9,15 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
+<div class="orb a" aria-hidden="true"></div><div class="orb b" aria-hidden="true"></div><div class="orb c" aria-hidden="true"></div>
+<div id="intro" aria-hidden="true"><div class="i-box"><div class="i-mark"><svg viewBox="0 0 40 40" width="84" height="84" aria-hidden="true"><rect width="84" height="84" rx="12" fill="#ccff00"/><path d="M15.5 11.5v17l14-8.5z" fill="#000"/></svg></div><div class="i-word">castable</div><div class="i-line"></div><div class="i-sub">Get cast. With receipts.</div></div></div>
 <header class="top">
   <div class="brand">
-    <div class="mark" aria-hidden="true">C</div>
+    <div class="mark" aria-hidden="true"><svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true"><rect width="40" height="40" rx="12" fill="#ccff00"/><path d="M15.5 11.5v17l14-8.5z" fill="#000"/></svg></div>
     <div>
-      <div class="name">Castable</div>
+      <div class="name">castable</div>
       <div class="tagline">Get cast. With receipts. · powered by Oriane video intelligence</div>
     </div>
   </div>
@@ -26,10 +30,12 @@
     <button type="button" role="tab" id="tab-brand" data-mode="brand" aria-controls="mode-brand" aria-selected="false" tabindex="-1">For brands</button>
   </div>
   <div data-for="creator">
+    <div class="eyebrow"><i></i>Live via Oriane · Instagram + TikTok · Dubai, 27 Sep</div>
     <h1>Type your handle. See if brands will cast you, <em>with receipts.</em></h1>
     <p>Castable watches your last videos the way a brand manager would: what you actually talk about on camera, anything risky, the hooks that work. Then it finds the creators next to you, shows which brands already pay them, and writes your pitches.</p>
   </div>
   <div data-for="brand" hidden>
+    <div class="eyebrow"><i></i>Live via Oriane · vetted on video, not vibes</div>
     <h1>Paste a brief. Get a vetted creator shortlist, <em>with the receipts.</em></h1>
     <p>Castable searches Instagram and TikTok by what creators actually say and show on camera, audits their recent videos for brand safety, and hands you a client-ready dossier with quotes, timestamps and keyframes.</p>
   </div>
@@ -162,5 +168,6 @@
 
 <footer class="page-foot">Castable · Get cast. With receipts. · evidence retrieved from Oriane Connect (connect.oriane.xyz) · quotes are verbatim transcript chunks</footer>
 <script src="/static/app.js"></script>
+<script src="/static/fx.js" defer></script>
 </body>
 </html>

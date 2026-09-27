@@ -5,6 +5,8 @@
 set -u
 cd "$(dirname "$0")"
 PORT="${PORT:-8080}"
+# a local .env (gitignored) is honoured too, so a key can live in the repo folder instead of the host's secrets
+if [ -f .env ]; then set -a; . ./.env; set +a; fi
 export SCOUT_DISCOVERY_LIMIT="${SCOUT_DISCOVERY_LIMIT:-40}" SCOUT_VET_TOP_K="${SCOUT_VET_TOP_K:-5}" \
        SCOUT_VET_VIDEOS_PER_CREATOR="${SCOUT_VET_VIDEOS_PER_CREATOR:-8}" SCOUT_MAX_RESULTS_PER_RUN="${SCOUT_MAX_RESULTS_PER_RUN:-160}"
 if [ -z "${ORIANE_API_KEY:-}" ]; then

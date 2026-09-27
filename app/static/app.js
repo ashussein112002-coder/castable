@@ -26,9 +26,13 @@
     brand: "Aurea", category: "fashion", region: "uae", band: "micro", competitors: "", days: 90,
   };
 
+  let MODE = "mock";
   async function health() {
     try {
       const r = await fetch("/api/health").then((r) => r.json());
+      MODE = r.mode || "mock";
+      const cd = $("c_demo");
+      if (cd) cd.textContent = MODE === "live" ? "Sample report" : "Try a demo";
       const led = r.ledger || {};
       let host = "";
       try { host = new URL(r.oriane_base_url).host; } catch (e) { host = r.oriane_base_url || ""; }
@@ -397,7 +401,10 @@
 
   for (const b of document.querySelectorAll(".modes [role=tab]")) b.addEventListener("click", () => setMode(b.dataset.mode));
   $("cform").addEventListener("submit", cStart);
-  $("c_demo").onclick = () => { $("c_handle").value = "rania.skincare38.demo"; $("c_ig").checked = true; $("c_tt").checked = false; $("c_region").value = "dubai"; $("c_niche").value = "skincare routines and reviews"; $("c_handle").focus(); };
+  $("c_demo").onclick = () => {
+    if (MODE === "live") { window.open("/demo", "_blank", "noopener"); $("c_handle").focus(); return; }
+    $("c_handle").value = "rania.skincare38.demo"; $("c_ig").checked = true; $("c_tt").checked = false; $("c_region").value = "dubai"; $("c_niche").value = "skincare routines and reviews"; $("c_handle").focus();
+  };
   $("c_recent").addEventListener("change", (e) => { if (e.target.value) cLoad(e.target.value); });
   $("form").addEventListener("submit", start);
   $("recent").addEventListener("change", (e) => { if (e.target.value) load(e.target.value); });

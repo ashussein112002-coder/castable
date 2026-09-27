@@ -411,9 +411,50 @@ ul.comments { list-style: none; margin: 0; padding: 0; display: grid; grid-templ
   .thumb::after { border-color: transparent transparent transparent rgba(0, 0, 0, .18); }
   .mail, .score { background: #fff; }
 }
+
+/* design pass: keynote type, sticky section nav, scroll reveal */
+.hero h1 { font-family: var(--sans); font-weight: 700; letter-spacing: -.03em; }
+.big { font-family: var(--sans) !important; font-weight: 700 !important; letter-spacing: -.035em; }
+.sec-head h2 { font-family: var(--sans); font-weight: 700; letter-spacing: -.025em; font-size: 28px; }
+.secnav { position: sticky; top: 0; z-index: 20; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; margin: 34px 0 -18px; padding: 8px; border: 1px solid rgba(255,255,255,.08); border-radius: 999px; background: rgba(11,13,16,.72); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); }
+.secnav::-webkit-scrollbar { display: none; }
+.secnav a { flex: none; padding: 8px 14px; border-radius: 999px; color: var(--muted); font: 600 12.5px var(--sans); letter-spacing: .02em; text-decoration: none; transition: background .2s, color .2s; }
+.secnav a:hover { color: var(--text); text-decoration: none; }
+.secnav a.on { background: var(--amber); color: #16120A; }
+@media (prefers-reduced-motion: no-preference) {
+  .sec, .kpis, .kitline { opacity: 0; transform: translateY(16px); transition: opacity .6s cubic-bezier(.2,.8,.2,1), transform .6s cubic-bezier(.2,.8,.2,1); }
+  .sec.in, .kpis.in, .kitline.in { opacity: 1; transform: none; }
+  .hero { animation: heroin .7s cubic-bezier(.2,.8,.2,1) both; }
+}
+@keyframes heroin { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@media print { .secnav { display: none; } .sec, .kpis, .kitline { opacity: 1 !important; transform: none !important; } }
+</style>
+<style>
+/* cinematic layer (fx.js) */
+#fx { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: 0; transition: opacity 1.4s ease; }
+#fx.on { opacity: 1; }
+#fx.fallback { opacity: 1; background: radial-gradient(1200px 700px at 70% -10%, rgba(245, 184, 74, .18), transparent 60%), #0b0d10; }
+.grain { position: fixed; inset: -50%; width: 200%; height: 200%; z-index: 1; pointer-events: none; opacity: .05; mix-blend-mode: soft-light; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); animation: grain 1.2s steps(6) infinite; }
+@keyframes grain { 0% { transform: translate(0, 0); } 20% { transform: translate(-3%, 2%); } 40% { transform: translate(2%, -4%); } 60% { transform: translate(-4%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(-1%, 4%); } }
+.wrap { position: relative; z-index: 2; }
+.kpis > *, .tilt { transition: transform .35s cubic-bezier(.2, .8, .2, 1); transform-style: preserve-3d; }
+@media (max-width: 760px) { .grain { display: none; } }
+@media print { #fx, .grain { display: none; } }
+</style>
+<style>
+:root { --bg: #000; --bg-2: #0a0a0a; --bg-3: #111; --bg-4: #161616; --line: #1e1e1e; --line-2: #2a2a2a; --text: #fff; --text-2: #cfcfcf; --muted: #8e8e93;
+  --amber: #ccff00; --amber-2: #e6ff66; --amber-soft: rgba(204, 255, 0, .10); --amber-line: rgba(204, 255, 0, .45); --teal: #00c805; --teal-soft: rgba(0, 200, 5, .12); --teal-line: rgba(0, 200, 5, .45); --steel: #5e5ce6; --sand: #c9c9c9;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, "Segoe UI", Arial, sans-serif; }
+body { background: #000; }
+.mk, .wordmark .mk { background: #ccff00; color: #000; }
+.secnav a.on { background: #ccff00; color: #000; }
+.btn { background: #ccff00; border-color: #ccff00; color: #000; }
+#fx.fallback { background: radial-gradient(1200px 700px at 70% -10%, rgba(204, 255, 0, .2), transparent 60%), #000; }
 </style>
 </head>
 <body>
+<canvas id="fx" data-soft=".42" aria-hidden="true"></canvas>
+<div class="grain" aria-hidden="true"></div>
 <div class="wrap">
 
 <header class="topbar">
@@ -525,6 +566,7 @@ ul.comments { list-style: none; margin: 0; padding: 0; display: grid; grid-templ
 </section>
 
 {#- ================= 01 WHAT YOU MAKE ================= #}
+<nav class="secnav" aria-label="Sections"><a href="#make">Make</a><a href="#fix">Fix</a><a href="#hooks">Hooks</a><a href="#market">Brands</a><a href="#pitches">Pitches</a><a href="#compare">Compare</a><a href="#evidence">Evidence</a><a href="#audience">Audience</a></nav>
 <section class="sec" id="make">
   <div class="sec-head"><h2><span>01</span>What you actually make</h2><p>Read from the transcripts, captions and hashtags of your last {{ r.videos_checked or 'recent' }} videos, not from your bio.</p></div>
   <div class="grid g-2">
@@ -845,5 +887,36 @@ ul.comments { list-style: none; margin: 0; padding: 0; display: grid; grid-templ
   });
 })();
 </script>
+<script>
+(function () {
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var targets = document.querySelectorAll('.sec, .kpis, .kitline');
+  if (reduce || !('IntersectionObserver' in window)) { targets.forEach(function (el) { el.classList.add('in'); }); }
+  else {
+    var io = new IntersectionObserver(function (entries) { entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { rootMargin: '0px 0px -10% 0px', threshold: 0.08 });
+    targets.forEach(function (el) { io.observe(el); });
+  }
+  var links = document.querySelectorAll('.secnav a');
+  if (links.length && 'IntersectionObserver' in window) {
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    var spy = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { links.forEach(function (a) { a.classList.remove('on'); }); var a = map[en.target.id]; if (a) a.classList.add('on'); } });
+    }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+    document.querySelectorAll('.sec[id]').forEach(function (s) { spy.observe(s); });
+  }
+  var big = document.querySelector('.hero .big');
+  if (big && !reduce) {
+    var txt = big.childNodes[0];
+    var target = parseFloat((txt && txt.nodeValue || '').trim());
+    if (!isNaN(target)) {
+      var t0 = null, dur = 900;
+      function step(ts) { if (!t0) t0 = ts; var k = Math.min(1, (ts - t0) / dur); var e = 1 - Math.pow(1 - k, 3); txt.nodeValue = (target * e).toFixed(1); if (k < 1) requestAnimationFrame(step); else txt.nodeValue = String(target); }
+      txt.nodeValue = '0.0'; requestAnimationFrame(step);
+    }
+  }
+})();
+</script>
+<script src="/static/fx.js" defer></script>
 </body>
 </html>

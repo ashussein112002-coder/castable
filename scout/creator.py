@@ -39,7 +39,9 @@ here what when where which who why how all any more most some such only own same
 today day days week video videos guys hi hello hey ok okay let lets go going come came see look looks watch this thing things
 honestly best part good great love loved amazing literally actually thing everyone everything something nothing because still
 after before first last next much many little lot bit way ways used use using know think feel felt want wants need needs
+scrolling stop wait pov changed obsessed viral follow comment share link bio code discount check tap swipe watch until end
 """.split())
+LANG_NAMES = {"en": "English", "ar": "Arabic", "es": "Spanish", "fr": "French", "hi": "Hindi", "ur": "Urdu", "tr": "Turkish", "ru": "Russian", "de": "German", "it": "Italian", "pt": "Portuguese", "tl": "Filipino", "id": "Indonesian", "fa": "Persian"}
 STOP_AR = set("في من على إلى عن مع هذا هذه ذلك التي الذي أن إن كان كانت هو هي هم أنا نحن أنت لكن أو و يا ما لا نعم كل بعد قبل عند حتى".split())
 WORD_RE = re.compile(r"[A-Za-z][A-Za-z'\-]{2,}|[؀-ۿ]{3,}")
 
@@ -190,16 +192,49 @@ def pitch_plan(llm: LLM, profile: dict[str, Any], me: dict[str, Any], topics: li
 
 
 def fallback_plan(profile: dict[str, Any], me: dict[str, Any], topics: list[dict[str, Any]], market: list[dict[str, Any]], bench: dict[str, Any]) -> dict[str, Any]:
+    """No LLM available: a plan written from the evidence with fixed, honest sentences.
+    Every number here is measured; nothing is invented. Brands come only from peers' sponsored posts."""
+    handle = profile.get("handle") or "creator"
+    followers = int(profile.get("followersCount") or 0)
+    words = [t["term"].lstrip("#") for t in topics if not t["term"].startswith("#")][:3] or [t["term"].lstrip("#") for t in topics[:3]]
+    niche = ", ".join(words) if words else "your niche"
+    er = (me.get("er_views_median") or 0) * 100
+    erp = bench.get("er_percentile")
+    cad = me.get("cadence_per_week") or 0
+    langs = me.get("language_mix") or {}
+    lang_txt = " and ".join(LANG_NAMES.get(k, str(k).upper()) for k in sorted(langs, key=langs.get, reverse=True)[:2] if k and k != "?") if langs else ""
+    hooks = [h.get("hook") for h in (me.get("hooks") or []) if h.get("hook")]
+    sponsors = [n for n, _ in (me.get("sponsored_partners") or []) if n and not str(n).startswith("(")]
+
     fixes = []
     for f in (me.get("flags") or [])[:4]:
-        fixes.append(f"Review the video from {f.get('published', '')[:10]}: “{(f.get('quote') or '')[:80]}” ({f.get('type')})")
-    if (me.get("cadence_per_week") or 0) < 1:
-        fixes.append("Post at least once a week for 4 weeks before pitching; brands read cadence as reliability")
+        when = (f.get("published") or "")[:10]
+        t = f.get("t")
+        stamp = f" at {int(t // 60):02d}:{int(t % 60):02d}" if isinstance(t, (int, float)) else ""
+        fixes.append(f"Archive or re-cut the video from {when}{stamp}: \u201c{(f.get('quote') or '')[:90]}\u201d reads as {str(f.get('type') or 'risk').replace('_', ' ')} to a brand's safety check")
+    if cad < 1:
+        fixes.append(f"You post {cad:.1f} times a week; brands read cadence as reliability. Hold 2 posts a week for 4 weeks before pitching")
+    if (me.get("last_post_days_ago") or 0) > 21:
+        fixes.append(f"Your last post is {int(me.get('last_post_days_ago'))} days old; post before you pitch so the first thing a brand sees is fresh")
+    if me.get("audio_copyrighted_share") and me["audio_copyrighted_share"] > 0.6:
+        fixes.append("Most of your recent videos use copyrighted audio; sponsored content usually needs licensed or original sound")
+    if (me.get("sponsored_posts") or 0) == 0:
+        fixes.append("No disclosed brand work yet: do one gifted collaboration with #ad so brands can see how you present a product")
+
     pitches = []
     for m in market[:3]:
         r = (m.get("receipts") or [{}])[0]
-        pitches.append({"brand": m["brand"], "why_fit": f"{m['creators']} creator(s) next to you posted {m['sponsored_posts']} sponsored video(s) with this brand", "angle": "One sponsored video in your usual format, hook first, product in the first 5 seconds", "subject_line": f"{m['brand']} × @{profile.get('handle')}: a creator your audience already trusts", "opener": f"I make {', '.join(t['term'] for t in topics[:3])} content for {int(profile.get('followersCount') or 0):,} people. Your work with @{r.get('handle') or 'creators in my niche'} caught my eye."})
-    return {"niche": ", ".join(t["term"] for t in topics[:4]) or "unknown", "positioning": "", "fix_before_pitching": fixes, "pitches": pitches, "media_kit_line": f"@{profile.get('handle')} · {int(profile.get('followersCount') or 0):,} followers · ER {((me.get('er_views_median') or 0) * 100):.1f}% per view" + (f" · top {100 - bench['er_percentile']}% of peers" if bench.get("er_percentile") is not None else ""), "rate_hint": ""}
+        peer = r.get("handle")
+        why = f"{m['creators']} creator(s) the index puts next to you posted {m['sponsored_posts']} sponsored video(s) with {m['brand']}" + (f"; the latest one, from @{peer}, is linked in your report" if peer else "")
+        hook = hooks[0] if hooks else None
+        angle = (f"Your usual {words[0]} format with the product in the first five seconds, opened the way your best hook opens: \u201c{hook[:70]}\u2026\u201d" if hook and words else "One video in your usual format, product in the first five seconds, your own hook style")
+        opener = (f"I make {niche} videos for {followers:,} people" + (f", mostly in {lang_txt}" if lang_txt else "") + f". I saw your work with @{peer} and my audience is the same room, one seat over." if peer else f"I make {niche} videos for {followers:,} people. Creators in my niche are already working with {m['brand']} and my audience asks me about it.")
+        pitches.append({"brand": m["brand"], "why_fit": why, "angle": angle, "subject_line": f"{m['brand']} \u00d7 @{handle}: {niche} for an audience that already buys", "opener": opener})
+
+    positioning = f"@{handle} makes {niche} content for {followers:,} followers" + (f", mostly in {lang_txt}" if lang_txt else "") + f". Engagement per view {er:.1f}%" + (f", in the top {max(1, 100 - int(erp))}% of {bench.get('peers', 0)} comparable creators" if erp is not None else "") + f". {len(sponsors)} disclosed brand partner(s) in the last {me.get('window_days', 180)} days" + (": " + ", ".join(sponsors[:3]) if sponsors else "") + "."
+    media_kit = f"@{handle} \u00b7 {followers:,} followers \u00b7 {er:.1f}% engagement per view" + (f" \u00b7 top {max(1, 100 - int(erp))}% of peers" if erp is not None else "") + (f" \u00b7 {cad:.1f} posts/week" if cad else "")
+    rate = ("Price on engagement quality, not follower count: your ER per view is above the peer median." if (erp is not None and erp >= 50) else "Price conservatively until cadence and engagement are above the peer median; lead with the receipts, not the rate.")
+    return {"niche": niche, "positioning": positioning, "fix_before_pitching": fixes, "pitches": pitches, "media_kit_line": media_kit, "rate_hint": rate}
 
 
 def creator_report(client: OrianeClient, form: dict[str, Any], llm: LLM, log=print) -> dict[str, Any]:
