@@ -1,0 +1,684 @@
+{
+ "id": "20260927-092207-c113",
+ "status": "done",
+ "started": "2026-09-27T09:22:07.138584+00:00",
+ "log": [
+  "[   0.1s] profile: @rania.skincare38.demo on instagram · 55,949 followers · not verified",
+  "[   0.1s] vetting: 12 recent videos for prf_bd0d09adb976009b1cf7c25a7ba1",
+  "[   0.1s] topics: #skintok, #glowup, sunscreen, glow, #skincare, scrolling, changed, skin",
+  "[  14.7s] niche enriched by LLM (claude-cli): 14 keywords",
+  "[  14.7s] self-audit: 0 flag(s), 3 sponsored post(s), cadence 0.52/week, languages {'en': 11, 'ar': 1}",
+  "[  14.7s] discovery: text query over 14 keywords / 9 hashtags, region=dubai, followers 16,784-167,847",
+  "[  14.8s] discovery: 0 matching videos from text intent",
+  "[  14.8s] discovery: visual asset ast_b3b96107135d45df29a246abe0e6 (image)",
+  "[  14.8s] discovery: 3 videos from visual similarity",
+  "[  14.8s] peers: 1 creators the index puts next to you",
+  "[  14.8s] vetting: 8 recent videos for prf_1c9453f92d73575ddebc4be758cf",
+  "[  14.8s] market: 1 brand(s) buying from creators like you (1 sponsored posts across 1 peers)",
+  "[  47.4s] plan: 2 pitch(es), 4 fix(es) (claude-cli)"
+ ],
+ "form": {
+  "handle": "rania.skincare38.demo",
+  "platforms": [
+   "instagram"
+  ],
+  "region": "dubai",
+  "niche": "",
+  "use_llm": true,
+  "videos_n": null,
+  "peers_n": null,
+  "peer_videos_n": null,
+  "discovery_limit": null,
+  "kind": "creator"
+ },
+ "mode": "mock",
+ "kind": "creator",
+ "report": {
+  "kind": "creator",
+  "handle": "rania.skincare38.demo",
+  "platforms": [
+   "instagram"
+  ],
+  "region": "dubai",
+  "profile": {
+   "id": "prf_bd0d09adb976009b1cf7c25a7ba1",
+   "platform": "instagram",
+   "handle": "rania.skincare38.demo",
+   "displayName": "Rania L.",
+   "bio": "skincare creator based in London. Collabs: rania.skincare38.demo@mail.demo",
+   "bioLink": "https://linktr.ee/rania.skincare38.demo",
+   "language": "en",
+   "isPrivate": false,
+   "isVerified": false,
+   "postsCount": 286,
+   "likesCount": 2014164,
+   "followersCount": 55949,
+   "followingCount": 738,
+   "platformId": "4942578581",
+   "profilePictureUrl": "https://picsum.photos/seed/rania.skincare38.demo/200",
+   "publicEmail": "rania.skincare38.demo@mail.demo",
+   "locationPlatformId": "3947586",
+   "locationCompleteAddress": "London",
+   "locationLatitude": 51.49172002012961,
+   "locationLongitude": -0.12479137096806918,
+   "createdAt": "2024-01-01T00:00:00.000Z",
+   "updatedAt": "2026-09-27T08:00:00Z"
+  },
+  "videos_checked": 12,
+  "topics": [
+   {
+    "term": "#skintok",
+    "videos": 9,
+    "share": 0.75
+   },
+   {
+    "term": "#glowup",
+    "videos": 7,
+    "share": 0.58
+   },
+   {
+    "term": "sunscreen",
+    "videos": 6,
+    "share": 0.5
+   },
+   {
+    "term": "glow",
+    "videos": 6,
+    "share": 0.5
+   },
+   {
+    "term": "#skincare",
+    "videos": 5,
+    "share": 0.42
+   },
+   {
+    "term": "scrolling",
+    "videos": 5,
+    "share": 0.42
+   },
+   {
+    "term": "changed",
+    "videos": 5,
+    "share": 0.42
+   },
+   {
+    "term": "skin",
+    "videos": 5,
+    "share": 0.42
+   },
+   {
+    "term": "stop",
+    "videos": 5,
+    "share": 0.42
+   },
+   {
+    "term": "routine",
+    "videos": 4,
+    "share": 0.33
+   },
+   {
+    "term": "#dubaiskincare",
+    "videos": 3,
+    "share": 0.25
+   },
+   {
+    "term": "#sponsored",
+    "videos": 3,
+    "share": 0.25
+   },
+   {
+    "term": "#ad",
+    "videos": 3,
+    "share": 0.25
+   },
+   {
+    "term": "moisturizer",
+    "videos": 3,
+    "share": 0.25
+   }
+  ],
+  "self_audit": {
+   "videos_checked": 12,
+   "window_days": 180,
+   "flags": [],
+   "flag_counts": {},
+   "sponsored_posts": 3,
+   "sponsored_partners": [
+    [
+     "nike",
+     2
+    ],
+    [
+     "carrefouruae",
+     1
+    ]
+   ],
+   "mentioned_brands": [
+    [
+     "nike",
+     2
+    ],
+    [
+     "carrefouruae",
+     1
+    ]
+   ],
+   "audio_copyrighted_share": 0.42,
+   "language_mix": {
+    "en": 11,
+    "ar": 1
+   },
+   "cadence_per_week": 0.52,
+   "last_post_days_ago": 16,
+   "er_views_median": 0.0687,
+   "er_followers_median": 0.0857,
+   "comment_like_ratio_median": 0.0654,
+   "views_per_follower_median": 1.14,
+   "authenticity_notes": [],
+   "hooks": [
+    {
+     "video": "cnt_2dbc3a3dc0913e1aeb429137737c",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "hook": "Stop scrolling, this changed my skin. So this is my retinol and honestly the skincare routine is the best part.",
+     "views": 177671,
+     "er": 0.1142
+    },
+    {
+     "video": "cnt_613efcfd79aa1cc01fdd794f7f16",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "hook": "Stop scrolling, this changed my skin. So this is my serum and honestly the sunscreen is the best part.",
+     "views": 113388,
+     "er": 0.0448
+    },
+    {
+     "video": "cnt_607f59ed55643e09620af648b539",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "hook": "Stop scrolling, this changed my skin. So this is my sunscreen and honestly the glow is the best part.",
+     "views": 106012,
+     "er": 0.0488
+    },
+    {
+     "video": "cnt_d1717f66e5a562d9849277d38ec7",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "hook": "ما حد يقولكم هالشي. So this is my sunscreen and honestly the glow is the best part.",
+     "views": 102572,
+     "er": 0.0598
+    },
+    {
+     "video": "cnt_7572366459e1a0c99044a9f08ff4",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "hook": "I tested it for 30 days. So this is my glow and honestly the moisturizer is the best part.",
+     "views": 69983,
+     "er": 0.0891
+    }
+   ],
+   "top_comments": [
+    {
+     "video": "cnt_2dbc3a3dc0913e1aeb429137737c",
+     "content": "Is it available in Riyadh?",
+     "likes": 885,
+     "handle": "jude"
+    },
+    {
+     "video": "cnt_6946ef16b3ca9fff92a8a3c299a5",
+     "content": "Obsessed 😍",
+     "likes": 826,
+     "handle": "nadia"
+    },
+    {
+     "video": "cnt_2dbc3a3dc0913e1aeb429137737c",
+     "content": "ما شاء الله",
+     "likes": 824,
+     "handle": "yara"
+    },
+    {
+     "video": "cnt_d1717f66e5a562d9849277d38ec7",
+     "content": "Is it available in Riyadh?",
+     "likes": 801,
+     "handle": "lina"
+    },
+    {
+     "video": "cnt_613efcfd79aa1cc01fdd794f7f16",
+     "content": "Where is this from?!",
+     "likes": 788,
+     "handle": "noor"
+    }
+   ],
+   "evidence_videos": [
+    {
+     "id": "cnt_2dbc3a3dc0913e1aeb429137737c",
+     "platform": "instagram",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "published": "2026-09-11T02:00:00Z",
+     "caption": "retinol #glowup #skintok #ad #sponsored @nike",
+     "thumbnail": "https://picsum.photos/seed/cnt_2dbc3a3dc0913e1aeb429137737c/360/640",
+     "views": 177671,
+     "likes": 15908,
+     "comments": 2693,
+     "er_views": 0.1142,
+     "duration": 13.2,
+     "language": "en",
+     "audio": {
+      "title": "Habibi",
+      "author": "rania.skincare38.demo",
+      "copyrighted": false
+     },
+     "transcript_excerpt": "Stop scrolling, this changed my skin. So this is my retinol and honestly the skincare routine is the best part. Use my code for 15 percent off.",
+     "frames": [
+      {
+       "t": 2.0,
+       "url": "https://picsum.photos/seed/cnt_2dbc3a3dc0913e1aeb429137737c1/270/480"
+      },
+      {
+       "t": 4.0,
+       "url": "https://picsum.photos/seed/cnt_2dbc3a3dc0913e1aeb429137737c2/270/480"
+      },
+      {
+       "t": 6.0,
+       "url": "https://picsum.photos/seed/cnt_2dbc3a3dc0913e1aeb429137737c3/270/480"
+      }
+     ],
+     "hashtags": [
+      "#glowup",
+      "#skintok",
+      "#ad",
+      "#sponsored"
+     ]
+    },
+    {
+     "id": "cnt_dbebccaa3fc138747b4d2a55699b",
+     "platform": "instagram",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "published": "2026-09-07T03:00:00Z",
+     "caption": "skincare routine #glowup #skintok",
+     "thumbnail": "https://picsum.photos/seed/cnt_dbebccaa3fc138747b4d2a55699b/360/640",
+     "views": 58540,
+     "likes": 2831,
+     "comments": 143,
+     "er_views": 0.0559,
+     "duration": 10.0,
+     "language": "en",
+     "audio": {
+      "title": "Habibi",
+      "author": "DJ Khaled",
+      "copyrighted": false
+     },
+     "transcript_excerpt": "Okay this is a Dubai secret. So this is my skincare routine and honestly the sunscreen is the best part.",
+     "frames": [
+      {
+       "t": 2.0,
+       "url": "https://picsum.photos/seed/cnt_dbebccaa3fc138747b4d2a55699b1/270/480"
+      },
+      {
+       "t": 4.0,
+       "url": "https://picsum.photos/seed/cnt_dbebccaa3fc138747b4d2a55699b2/270/480"
+      },
+      {
+       "t": 6.0,
+       "url": "https://picsum.photos/seed/cnt_dbebccaa3fc138747b4d2a55699b3/270/480"
+      }
+     ],
+     "hashtags": [
+      "#glowup",
+      "#skintok"
+     ]
+    },
+    {
+     "id": "cnt_6946ef16b3ca9fff92a8a3c299a5",
+     "platform": "instagram",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "published": "2026-09-03T19:00:00Z",
+     "caption": "skincare routine #skincare #glowup",
+     "thumbnail": "https://picsum.photos/seed/cnt_6946ef16b3ca9fff92a8a3c299a5/360/640",
+     "views": 67030,
+     "likes": 5626,
+     "comments": 494,
+     "er_views": 0.1002,
+     "duration": 9.6,
+     "language": "en",
+     "audio": {
+      "title": "Original sound",
+      "author": "Sabrina Carpenter",
+      "copyrighted": true
+     },
+     "transcript_excerpt": "Hi guys, today skincare routine. So this is my skincare routine and honestly the glow is the best part.",
+     "frames": [
+      {
+       "t": 2.0,
+       "url": "https://picsum.photos/seed/cnt_6946ef16b3ca9fff92a8a3c299a51/270/480"
+      },
+      {
+       "t": 4.0,
+       "url": "https://picsum.photos/seed/cnt_6946ef16b3ca9fff92a8a3c299a52/270/480"
+      },
+      {
+       "t": 6.0,
+       "url": "https://picsum.photos/seed/cnt_6946ef16b3ca9fff92a8a3c299a53/270/480"
+      }
+     ],
+     "hashtags": [
+      "#skincare",
+      "#glowup"
+     ]
+    },
+    {
+     "id": "cnt_18992afe795afddca67bc2adada4",
+     "platform": "instagram",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "published": "2026-08-15T08:00:00Z",
+     "caption": "sunscreen #glowup #skintok #ad #sponsored @nike",
+     "thumbnail": "https://picsum.photos/seed/cnt_18992afe795afddca67bc2adada4/360/640",
+     "views": 27231,
+     "likes": 2041,
+     "comments": 279,
+     "er_views": 0.0931,
+     "duration": 12.7,
+     "language": "en",
+     "audio": {
+      "title": "Espresso",
+      "author": "DJ Khaled",
+      "copyrighted": false
+     },
+     "transcript_excerpt": "Stop scrolling, this changed my skin. So this is my sunscreen and honestly the moisturizer is the best part. Use my code for 15 percent off.",
+     "frames": [
+      {
+       "t": 2.0,
+       "url": "https://picsum.photos/seed/cnt_18992afe795afddca67bc2adada41/270/480"
+      },
+      {
+       "t": 4.0,
+       "url": "https://picsum.photos/seed/cnt_18992afe795afddca67bc2adada42/270/480"
+      },
+      {
+       "t": 6.0,
+       "url": "https://picsum.photos/seed/cnt_18992afe795afddca67bc2adada43/270/480"
+      }
+     ],
+     "hashtags": [
+      "#glowup",
+      "#skintok",
+      "#ad",
+      "#sponsored"
+     ]
+    },
+    {
+     "id": "cnt_d1717f66e5a562d9849277d38ec7",
+     "platform": "instagram",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "published": "2026-08-04T01:00:00Z",
+     "caption": "sunscreen #skintok #dubaiskincare",
+     "thumbnail": "https://picsum.photos/seed/cnt_d1717f66e5a562d9849277d38ec7/360/640",
+     "views": 102572,
+     "likes": 5274,
+     "comments": 304,
+     "er_views": 0.0598,
+     "duration": 8.7,
+     "language": "en",
+     "audio": {
+      "title": "Original sound",
+      "author": "Bruno Mars",
+      "copyrighted": true
+     },
+     "transcript_excerpt": "ما حد يقولكم هالشي. So this is my sunscreen and honestly the glow is the best part.",
+     "frames": [
+      {
+       "t": 2.0,
+       "url": "https://picsum.photos/seed/cnt_d1717f66e5a562d9849277d38ec71/270/480"
+      },
+      {
+       "t": 4.0,
+       "url": "https://picsum.photos/seed/cnt_d1717f66e5a562d9849277d38ec72/270/480"
+      },
+      {
+       "t": 6.0,
+       "url": "https://picsum.photos/seed/cnt_d1717f66e5a562d9849277d38ec73/270/480"
+      }
+     ],
+     "hashtags": [
+      "#skintok",
+      "#dubaiskincare"
+     ]
+    },
+    {
+     "id": "cnt_7572366459e1a0c99044a9f08ff4",
+     "platform": "instagram",
+     "link": "https://www.instagram.com/rania.skincare38.demo/",
+     "published": "2026-06-18T08:00:00Z",
+     "caption": "glow #skintok #glowup",
+     "thumbnail": "https://picsum.photos/seed/cnt_7572366459e1a0c99044a9f08ff4/360/640",
+     "views": 69983,
+     "likes": 5414,
+     "comments": 251,
+     "er_views": 0.0891,
+     "duration": 9.6,
+     "language": "en",
+     "audio": {
+      "title": "Die With A Smile",
+      "author": "rania.skincare38.demo",
+      "copyrighted": false
+     },
+     "transcript_excerpt": "I tested it for 30 days. So this is my glow and honestly the moisturizer is the best part.",
+     "frames": [
+      {
+       "t": 2.0,
+       "url": "https://picsum.photos/seed/cnt_7572366459e1a0c99044a9f08ff41/270/480"
+      },
+      {
+       "t": 4.0,
+       "url": "https://picsum.photos/seed/cnt_7572366459e1a0c99044a9f08ff42/270/480"
+      },
+      {
+       "t": 6.0,
+       "url": "https://picsum.photos/seed/cnt_7572366459e1a0c99044a9f08ff43/270/480"
+      }
+     ],
+     "hashtags": [
+      "#skintok",
+      "#glowup"
+     ]
+    }
+   ]
+  },
+  "peers": [
+   {
+    "profileId": "prf_1c9453f92d73575ddebc4be758cf",
+    "handle": "jana.luxury2.demo",
+    "displayName": "Jana D.",
+    "platform": "instagram",
+    "followers": 59842,
+    "matching_videos": 3,
+    "matched_queries": {},
+    "visual_best_rank": 1,
+    "views_sum": 281687,
+    "views_max": 138821,
+    "er_views_mean": 0.0498,
+    "er_followers_mean": 0.0608,
+    "top_videos": [
+     {
+      "id": "cnt_086434d3bea55741b8d3a07ab105",
+      "platform": "instagram",
+      "platformId": null,
+      "profileHandle": "jana.luxury2.demo",
+      "caption": "ماركات #unboxing #designer",
+      "captionLanguage": "ar",
+      "publishedAt": "2026-08-10T07:00:00Z",
+      "thumbnailMediaUrl": "https://picsum.photos/seed/cnt_086434d3bea55741b8d3a07ab105/360/640",
+      "viewsCount": 138821,
+      "likesCount": 3593,
+      "commentsCount": 80,
+      "sharesCount": 380,
+      "engagementRatePerViews": 0.0292,
+      "engagementRatePerFollowers": 0.0677,
+      "duration": 12.7,
+      "hashtags": [
+       "#unboxing",
+       "#designer"
+      ],
+      "matchedQueries": []
+     },
+     {
+      "id": "cnt_a5bc496c346af98a98cfb1899bcc",
+      "platform": "instagram",
+      "platformId": null,
+      "profileHandle": "jana.luxury2.demo",
+      "caption": "فخامة #designer #unboxing",
+      "captionLanguage": "ar",
+      "publishedAt": "2026-07-03T04:00:00Z",
+      "thumbnailMediaUrl": "https://picsum.photos/seed/cnt_a5bc496c346af98a98cfb1899bcc/360/640",
+      "viewsCount": 114889,
+      "likesCount": 3773,
+      "commentsCount": 460,
+      "sharesCount": 399,
+      "engagementRatePerViews": 0.0403,
+      "engagementRatePerFollowers": 0.0774,
+      "duration": 9.6,
+      "hashtags": [
+       "#designer",
+       "#unboxing"
+      ],
+      "matchedQueries": []
+     },
+     {
+      "id": "cnt_9d1693de09efcba7331bba1d7da0",
+      "platform": "instagram",
+      "platformId": null,
+      "profileHandle": "jana.luxury2.demo",
+      "caption": "ماركات #unboxing #luxury",
+      "captionLanguage": "ar",
+      "publishedAt": "2026-07-02T23:00:00Z",
+      "thumbnailMediaUrl": "https://picsum.photos/seed/cnt_9d1693de09efcba7331bba1d7da0/360/640",
+      "viewsCount": 27977,
+      "likesCount": 1778,
+      "commentsCount": 272,
+      "sharesCount": 188,
+      "engagementRatePerViews": 0.08,
+      "engagementRatePerFollowers": 0.0374,
+      "duration": 12.7,
+      "hashtags": [
+       "#unboxing",
+       "#luxury"
+      ],
+      "matchedQueries": []
+     }
+    ],
+    "hashtags": [
+     "unboxing",
+     "designer",
+     "luxury"
+    ],
+    "languages": {
+     "ar": 3
+    }
+   }
+  ],
+  "discovery": {
+   "videos": 3,
+   "creators": 1,
+   "visual_asset": "ast_b3b96107135d45df29a246abe0e6"
+  },
+  "benchmark": {
+   "peers": 1,
+   "er_views_median": 0.0687,
+   "er_percentile": 100,
+   "peer_er_median": 0.0498,
+   "views_per_follower_median": 1.14,
+   "views_per_follower_percentile": 0
+  },
+  "market": [
+   {
+    "brand": "nike",
+    "sponsored_posts": 1,
+    "creators": 1,
+    "receipts": [
+     {
+      "handle": "jana.luxury2.demo",
+      "platform": "instagram",
+      "followers": 59842,
+      "caption": "ماركات #unboxing #designer",
+      "link": "https://www.instagram.com/jana.luxury2.demo/",
+      "published": "2026-08-10T07:00:00Z",
+      "views": 138821,
+      "er_views": 0.0292
+     }
+    ]
+   }
+  ],
+  "peer_sponsor_summary": {
+   "prf_1c9453f92d73575ddebc4be758cf": {
+    "handle": "jana.luxury2.demo",
+    "sponsored_posts": 1,
+    "partners": [
+     [
+      "nike",
+      1
+     ]
+    ]
+   }
+  },
+  "score": {
+   "total": 74.5,
+   "grade": "B",
+   "components": {
+    "consistency": 55.6,
+    "engagement": 70.0,
+    "safety": 100.0,
+    "market_fit": 62.0
+   },
+   "weights": {
+    "consistency": 0.2,
+    "engagement": 0.3,
+    "safety": 0.3,
+    "market_fit": 0.2
+   },
+   "caps": []
+  },
+  "plan": {
+   "niche": "skincare routines and product reviews",
+   "positioning": "Rania is a London-based skincare micro-creator whose routine-and-hook content (retinol, serum, sunscreen, glow) drives an engagement rate at the 100th percentile among her peer set, well above the peer median of 4.98%. Her comments show recurring Gulf-region purchase intent despite her being based outside the region, pointing to an audience brands could convert if availability questions were answered.",
+   "fix_before_pitching": [
+    "Raise posting cadence from 0.52 posts/week (about one every two weeks) to a consistent weekly schedule before outreach.",
+    "Address the 0th-percentile views-per-follower rate versus peers so reach matches her strong engagement quality.",
+    "Reply to the repeated 'Is it available in Riyadh?' comments with sourcing/availability info to prove she can convert Gulf demand.",
+    "Broaden proof of category fit beyond a single brand (nike) currently buying in her niche."
+   ],
+   "pitches": [
+    {
+     "brand": "nike",
+     "why_fit": "Nike has already sponsored her twice, so this is a renewal pitch backed by existing history rather than a cold approach.",
+     "angle": "A short skin-and-recovery series pairing Nike product with her existing skincare-routine format.",
+     "subject_line": "Round three with rania.skincare38.demo?",
+     "opener": "I loved working with Nike on our last two collaborations, and my audience still brings them up in the comments. I would like to build on that with a new series this quarter."
+    },
+    {
+     "brand": "carrefouruae",
+     "why_fit": "Carrefour UAE has sponsored her once already, and her comments show real Gulf-region purchase intent asking where products are sold.",
+     "angle": "A 'where to buy' skincare haul filmed in a Carrefour UAE store, answering her audience's availability questions directly.",
+     "subject_line": "Turning 'where do I buy this' into a Carrefour haul",
+     "opener": "My comments keep asking where my skincare picks are sold in the Gulf. I would like to answer that directly with a haul filmed in your stores."
+    }
+   ],
+   "media_kit_line": "I hold a 6.87% engagement-to-views rate, the 100th percentile among my peer set, across 55,949 followers who keep asking where to buy what I use.",
+   "rate_hint": "Given a top-percentile engagement rate but bottom-percentile reach per follower, price on engagement quality and comment-driven purchase intent rather than raw follower count, leaning toward the lower-to-mid end for a London skincare micro-creator until cadence and reach improve."
+  },
+  "plan_source": "claude-cli",
+  "generated": "2026-09-27T09:22:54.540454+00:00"
+ },
+ "summary": "@rania.skincare38.demo · readiness 74.5 (B) · 1 brands buying in your niche · 0 thing(s) to fix before pitching",
+ "stats": {
+  "oriane": {
+   "calls": 6,
+   "served_from_cache": 0,
+   "results_fetched_live": 24,
+   "results_by_projection": {
+    "full": 21,
+    "default": 3
+   },
+   "api_execution_ms_avg": 28.3,
+   "wall_ms_avg": 10.7
+  },
+  "llm": "claude-cli",
+  "llm_last_error": null,
+  "seconds": 47.4
+ },
+ "finished": "2026-09-27T09:22:54.540585+00:00"
+}

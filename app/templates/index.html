@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Castable: get cast, with receipts. Creators check their brand-readiness from their own videos; brands get a vetted creator shortlist with video evidence.">
+<title>Castable · Get cast. With receipts.</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <div class="mark" aria-hidden="true">C</div>
+    <div>
+      <div class="name">Castable</div>
+      <div class="tagline">Get cast. With receipts. · powered by Oriane video intelligence</div>
+    </div>
+  </div>
+  <div class="status" id="status" aria-live="polite"><span class="pill">connecting…</span></div>
+</header>
+
+<section class="intro">
+  <div class="modes" role="tablist" aria-label="Who is this for?">
+    <button type="button" role="tab" id="tab-creator" data-mode="creator" aria-controls="mode-creator" aria-selected="true">For creators</button>
+    <button type="button" role="tab" id="tab-brand" data-mode="brand" aria-controls="mode-brand" aria-selected="false" tabindex="-1">For brands</button>
+  </div>
+  <div data-for="creator">
+    <h1>Type your handle. See if brands will cast you, <em>with receipts.</em></h1>
+    <p>Castable watches your last videos the way a brand manager would: what you actually talk about on camera, anything risky, the hooks that work. Then it finds the creators next to you, shows which brands already pay them, and writes your pitches.</p>
+  </div>
+  <div data-for="brand" hidden>
+    <h1>Paste a brief. Get a vetted creator shortlist, <em>with the receipts.</em></h1>
+    <p>Castable searches Instagram and TikTok by what creators actually say and show on camera, audits their recent videos for brand safety, and hands you a client-ready dossier with quotes, timestamps and keyframes.</p>
+  </div>
+</section>
+
+<!-- ============ CREATOR MODE (primary) ============ -->
+<main class="layout" id="mode-creator" role="tabpanel" aria-labelledby="tab-creator">
+  <section class="panel form-panel">
+    <div class="panel-head">
+      <h2><span class="step-no">1</span>Your handle</h2>
+      <button type="button" class="demo" id="c_demo" title="Fill in a demo creator">Try a demo</button>
+    </div>
+    <form id="cform" autocomplete="off">
+      <label for="c_handle">Your Instagram or TikTok handle</label>
+      <div class="handle-box"><span aria-hidden="true">@</span><input id="c_handle" name="handle" placeholder="yourhandle" autocapitalize="off" autocorrect="off" spellcheck="false" inputmode="text" maxlength="64"></div>
+      <div class="checks" role="group" aria-label="Where you post">
+        <label class="check"><input type="checkbox" id="c_ig" checked><span>Instagram</span></label>
+        <label class="check"><input type="checkbox" id="c_tt" checked><span>TikTok</span></label>
+      </div>
+      <div class="row">
+        <div><label for="c_region">Where you're based</label><select id="c_region"></select></div>
+        <div><label for="c_niche">Your niche in 5 words <small>optional</small></label><input id="c_niche" maxlength="60" placeholder="skincare for oily skin"></div>
+      </div>
+      <label class="check wide"><input type="checkbox" id="c_llm" checked><span>Write my pitches with AI</span></label>
+      <button class="primary" id="c_go" type="submit"><span>Am I castable?</span><i aria-hidden="true">→</i></button>
+      <p class="fine">Reads public videos only · no login · about a minute</p>
+    </form>
+
+    <div class="how">
+      <h3>What you get</h3>
+      <ol>
+        <li><b>What you actually make</b><span>Topics from your own transcripts, languages, posting rhythm.</span></li>
+        <li><b>Fix before you pitch</b><span>A brand-safety self-audit with the exact quote and timestamp.</span></li>
+        <li><b>Brands buying from creators like you</b><span>Real sponsored posts from the creators next to you, linked.</span></li>
+        <li><b>Your pitches</b><span>Subject line and opener per brand, ready to copy.</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="panel run-panel">
+    <div class="panel-head">
+      <h2><span class="step-no">2</span>Your report</h2>
+      <select id="c_recent" class="recent" aria-label="Recent checks" hidden><option value="">Recent checks</option></select>
+    </div>
+    <ol class="steps" id="c_steps" aria-live="polite"></ol>
+    <div id="c_warn"></div>
+    <div id="c_result">
+      <div class="empty">
+        <b>Your Brand-Readiness Report appears here</b>
+        <span>Type your handle and hit <em>Am I castable?</em> You get a score out of 100, the things to fix, the brands to pitch, and the receipts behind every number.</span>
+      </div>
+    </div>
+    <details class="rawlog" id="c_rawlog" hidden>
+      <summary>Technical log</summary>
+      <div class="log" id="c_log"></div>
+    </details>
+  </section>
+</main>
+
+<!-- ============ BRAND MODE ============ -->
+<main class="layout" id="mode-brand" role="tabpanel" aria-labelledby="tab-brand" hidden>
+  <section class="panel form-panel">
+    <div class="panel-head">
+      <h2><span class="step-no">A</span>Brand brief</h2>
+      <button type="button" class="demo" id="demo" title="Fill the form with a ready-made demo brief">Demo brief</button>
+    </div>
+    <form id="form">
+      <label for="text">Brief <small>English or Arabic</small></label>
+      <textarea id="text" dir="auto" placeholder="e.g. Luxury skincare launch in Dubai. Audience: women 22-35, Arabic and English. Premium, calm tone. Competitors: La Mer, Estee Lauder. Avoid: giveaways, discount-code creators."></textarea>
+      <div class="examples" id="examples" aria-label="Example briefs"></div>
+      <div class="row">
+        <div><label for="brand">Brand</label><input id="brand" placeholder="optional"></div>
+        <div><label for="category">Category</label><select id="category"><option value="">auto-detect</option><option>skincare</option><option>beauty</option><option>fashion</option><option>modest</option><option>luxury</option><option>fragrance</option><option>fitness</option><option>food</option><option>travel</option><option>tech</option><option>cars</option><option>haircare</option><option>jewelry</option></select></div>
+      </div>
+      <div class="row">
+        <div><label for="region">Creators based in</label><select id="region"></select></div>
+        <div><label for="band">Follower band</label><select id="band"><option value="nano">nano 1K–10K</option><option value="micro" selected>micro 10K–500K</option><option value="mid">mid 100K–500K</option><option value="macro">macro 500K–2M</option><option value="any">any</option></select></div>
+      </div>
+      <div class="row">
+        <div><label for="competitors">Competitors to flag</label><input id="competitors" placeholder="La Mer, Estee Lauder"></div>
+        <div><label for="days">Recent window (days)</label><input id="days" type="number" value="90" min="7" max="365"></div>
+      </div>
+      <label for="image_url">Visual reference <small>image URL, optional · searches by look</small></label>
+      <input id="image_url" placeholder="https://…/campaign-key-visual.jpg">
+      <div class="checks">
+        <label class="check"><input type="checkbox" id="p_ig" checked><span>Instagram</span></label>
+        <label class="check"><input type="checkbox" id="p_tt" checked><span>TikTok</span></label>
+        <label class="check"><input type="checkbox" id="use_llm" checked><span>AI judgment</span></label>
+      </div>
+      <button class="primary" id="go" type="submit"><span>Find castable creators</span><i aria-hidden="true">→</i></button>
+    </form>
+
+    <div class="how">
+      <h3>How it works</h3>
+      <ol id="how">
+        <li><b>Brief</b><span>Parsed into keywords, hashtags, competitors, languages and region (Arabic aware).</span></li>
+        <li><b>Oriane semantic search</b><span>Transcript + caption + visual similarity across Instagram and TikTok videos.</span></li>
+        <li><b>Profile enrichment</b><span>Followers, bio, verified status, location and public contact.</span></li>
+        <li><b>Vetting on recent videos</b><span>Transcripts, keyframes and comments checked for competitors, risk terms and sponsorships.</span></li>
+        <li><b>Transparent score</b><span>Relevance, performance, audience and safety, every weight shown.</span></li>
+        <li><b>Dossier</b><span>Client-ready evidence pack: quotes with timestamps, keyframes, flags. CSV too.</span></li>
+      </ol>
+    </div>
+    <div class="foot" id="foot"></div>
+  </section>
+
+  <section class="panel run-panel">
+    <div class="panel-head">
+      <h2><span class="step-no">B</span>Shortlist</h2>
+      <select id="recent" class="recent" aria-label="Recent runs" hidden><option value="">Recent runs</option></select>
+    </div>
+    <div class="log" id="log" aria-live="polite">Ready. Paste a brief (or hit Demo brief) and run.</div>
+    <div class="result-head" id="resulthead" hidden>
+      <p class="summary" id="summary"></p>
+      <div class="actions" id="actions" hidden>
+        <a class="btn amber" id="dossier" target="_blank" rel="noopener">Open client dossier ↗</a>
+        <a class="btn" id="csv">Download CSV</a>
+        <a class="btn" id="json" target="_blank" rel="noopener">Raw JSON</a>
+      </div>
+    </div>
+    <div id="warn"></div>
+    <div class="cards" id="cards">
+      <div class="empty">
+        <b>No shortlist yet</b>
+        <span>Results appear here as ranked creator cards, each linked to its evidence in the dossier.</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="page-foot">Castable · Get cast. With receipts. · evidence retrieved from Oriane Connect (connect.oriane.xyz) · quotes are verbatim transcript chunks</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

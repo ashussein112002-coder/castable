@@ -1,0 +1,895 @@
+{#- Castable: client-facing creator casting dossier.
+    Self-contained (inline CSS, no external assets besides creator media URLs).
+    Every field is optional: live Oriane data may omit anything the mock provides. -#}
+{%- set LANG = {'ar': 'Arabic', 'en': 'English', 'fr': 'French', 'hi': 'Hindi', 'ur': 'Urdu', 'es': 'Spanish', 'tl': 'Tagalog', 'ru': 'Russian', 'tr': 'Turkish', 'fa': 'Persian', 'de': 'German', 'it': 'Italian', 'pt': 'Portuguese', 'ml': 'Malayalam', 'bn': 'Bengali', 'id': 'Indonesian', 'zh': 'Chinese', 'ko': 'Korean', 'ja': 'Japanese'} -%}
+{%- set PLAT = {'tiktok': 'TikTok', 'instagram': 'Instagram', 'youtube': 'YouTube'} -%}
+{%- set FLAG = {'competitor_mention': 'Competitor mention', 'avoid_topic': 'Avoid-list topic', 'drugs_vape': 'Drugs / vape', 'gambling_scams': 'Gambling / scams', 'weapons_violence': 'Weapons / violence', 'political_religious': 'Political / religious', 'adult': 'Adult content', 'alcohol': 'Alcohol', 'profanity': 'Profanity'} -%}
+{%- set COMPS = ['relevance', 'performance', 'audience', 'safety'] -%}
+{%- set W = weights or {'relevance': 0.35, 'performance': 0.25, 'audience': 0.15, 'safety': 0.25} -%}
+{%- set P = penalty or {'high': 35, 'medium': 12, 'low': 5} -%}
+{%- set st = run.stats or {} -%}
+{%- set ori = st.oriane or {} -%}
+{%- set proj = ori.results_by_projection or {} -%}
+{%- set disc = run.discovery or {} -%}
+{%- set form = run.form or {} -%}
+{%- set comp_norm = [] -%}
+{%- for x in brief.competitors or [] -%}{%- set _ = comp_norm.append((x|string)|lower|replace(' ', '')|replace('.', '')|replace("'", '')) -%}{%- endfor -%}
+{%- set ns = namespace(vetted=0, clean=0, flagged=0, videos=0, quotes=0, frames=0, comments=0, judged=0) -%}
+{%- for row in shortlist -%}
+  {%- set v = row.vetting -%}
+  {%- if row.judgment -%}{%- set ns.judged = ns.judged + 1 -%}{%- endif -%}
+  {%- if v -%}
+    {%- set ns.vetted = ns.vetted + 1 -%}
+    {%- if (v.flags or [])|length -%}{%- set ns.flagged = ns.flagged + 1 -%}{%- else -%}{%- set ns.clean = ns.clean + 1 -%}{%- endif -%}
+    {%- if v.videos_checked is number -%}{%- set ns.videos = ns.videos + v.videos_checked -%}{%- endif -%}
+    {%- for e in v.evidence_videos or [] -%}
+      {%- if e.transcript_excerpt -%}{%- set ns.quotes = ns.quotes + 1 -%}{%- endif -%}
+      {%- set ns.frames = ns.frames + (e.frames or [])|length -%}
+    {%- endfor -%}
+    {%- set ns.comments = ns.comments + (v.top_comments or [])|length -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- macro profile_url(platform, handle) -%}
+{%- if handle -%}{%- if platform == 'tiktok' -%}https://www.tiktok.com/@{{ handle }}{%- else -%}https://www.instagram.com/{{ handle }}/{%- endif -%}{%- endif -%}
+{%- endmacro -%}
+
+{%- macro href(u) -%}{%- if u and ((u|string).startswith('http://') or (u|string).startswith('https://')) -%}{{ u }}{%- endif -%}{%- endmacro -%}
+
+{%- macro pair_name(it) -%}{%- if it is mapping -%}{{ it.get('brand') or it.get('name') or it.get('handle') or '' }}{%- elif it is string -%}{{ it }}{%- elif it -%}{{ it[0] }}{%- endif -%}{%- endmacro -%}
+{%- macro pair_count(it) -%}{%- if it is mapping -%}{{ it.get('count') or it.get('n') or '' }}{%- elif it is string -%}{%- elif it and it|length > 1 -%}{{ it[1] }}{%- endif -%}{%- endmacro -%}
+
+{%- macro avatar(p, c, size) -%}
+{%- set nm = (p.displayName or c.displayName or c.handle or '?')|string -%}
+{%- set words = nm.replace('.', ' ').replace('_', ' ').replace('-', ' ').split() -%}
+{%- set ini = ((words[0][0] if words else '?') ~ (words[1][0] if words|length > 1 else ''))|upper -%}
+<span class="av av-{{ size }}" aria-hidden="true"><span class="av-ini">{{ ini }}</span>{% if href(p.profilePictureUrl) %}<img src="{{ p.profilePictureUrl }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+{%- endmacro -%}
+
+{%- macro grade_pill(s) -%}<span class="grade g-{{ s.grade or 'NA' }}">{{ s.grade or '–' }}</span>{%- endmacro -%}
+
+{%- macro breakdown(s, size) -%}
+{%- set comps = s.components or {} -%}
+{%- set w = s.weights or W -%}
+<span class="bd bd-{{ size }}" role="img" aria-label="Score breakdown">
+  {%- for k in COMPS -%}
+    {%- set val = comps.get(k) -%}
+    {%- if val is number and w.get(k) is number -%}
+    <i class="seg seg-{{ k }}" style="width: {{ '%.2f'|format(val * w.get(k)) }}%" title="{{ k|capitalize }} {{ val }} × {{ w.get(k) }} = {{ '%.1f'|format(val * w.get(k)) }} pts"></i>
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if s.caps and s.total is number -%}<b class="capmark" style="left: {{ s.total }}%" title="Capped at {{ s.total }}"></b>{%- endif -%}
+</span>
+{%- endmacro -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creator Casting Dossier{% if brief.brand %} · {{ brief.brand }}{% endif %} · Castable</title>
+<style>
+:root {
+  --bg: #0B0D10; --bg-2: #101317; --bg-3: #151920; --bg-4: #1B2028;
+  --line: #222831; --line-2: #2E3540;
+  --text: #EDEAE4; --text-2: #BDB9B1; --muted: #7F8793; --faint: #555C67;
+  --amber: #F5B84A; --amber-2: #FFD58A; --amber-soft: rgba(245, 184, 74, .10); --amber-line: rgba(245, 184, 74, .35);
+  --teal: #3CC8B4; --teal-soft: rgba(60, 200, 180, .10); --teal-line: rgba(60, 200, 180, .35);
+  --red: #EF6B6B; --red-soft: rgba(239, 107, 107, .10); --red-line: rgba(239, 107, 107, .40);
+  --steel: #7C93B5; --sand: #CDBB9E;
+  --seg-relevance: var(--amber); --seg-performance: var(--steel); --seg-audience: var(--sand); --seg-safety: var(--teal);
+  --serif: "Iowan Old Style", Charter, "Palatino Linotype", Palatino, Georgia, Cambria, Caladea, "Noto Naskh Arabic", "DejaVu Serif", serif;
+  --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Arabic", "Geeza Pro", Tahoma, "DejaVu Sans", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14.5px/1.55 var(--sans); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+a { color: var(--amber-2); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+code, .mono { font-family: var(--mono); font-size: .86em; }
+q { quotes: "\201C" "\201D"; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 36px 40px 64px; }
+
+/* ---------- cover ---------- */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.wordmark { font-weight: 800; letter-spacing: .28em; font-size: 12px; text-transform: uppercase; }
+.wordmark span { color: var(--amber); letter-spacing: .18em; font-weight: 600; margin-left: 6px; }
+.topmeta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.topmeta code { color: var(--text-2); font-size: 11.5px; }
+.mode { border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 9px; letter-spacing: .1em; }
+.mode-live { color: var(--teal); border-color: var(--teal-line); }
+.mode-mock { color: var(--amber); border-color: var(--amber-line); }
+.mode-offline { color: var(--red); border-color: var(--red-line); }
+.btn { font: 600 11.5px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--bg); background: var(--amber); border: 0; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--text-2); border: 1px solid var(--line-2); }
+
+.hero { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 48px; padding: 44px 0 30px; align-items: end; }
+.eyebrow { font-size: 11.5px; letter-spacing: .26em; text-transform: uppercase; color: var(--amber); font-weight: 700; margin-bottom: 14px; }
+h1 { font-family: var(--serif); font-weight: 400; font-size: 58px; line-height: 1.02; letter-spacing: -.015em; margin: 0; }
+.forline { font-family: var(--serif); font-style: italic; font-size: 24px; color: var(--amber-2); margin-top: 12px; }
+.forline .sep { margin: 0 .4em; color: var(--muted); font-style: normal; }
+.summary { font-family: var(--serif); font-size: 19px; line-height: 1.5; color: var(--text); margin: 0; padding-left: 20px; border-left: 2px solid var(--amber); }
+.summary small { display: block; margin-top: 10px; font: 11px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-left: 1px solid var(--line); margin: 6px 0 0; }
+.facts > div { padding: 13px 16px 14px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 0; }
+.facts dt { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.facts dd { margin: 0; font-size: 14.5px; color: var(--text); overflow-wrap: anywhere; }
+.facts dd .dim { color: var(--muted); }
+.brieftext { margin: 18px 0 0; padding: 16px 20px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; color: var(--text-2); font-size: 14px; }
+.brieftext b { display: block; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; font-weight: 600; }
+
+.kpis { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0; margin-top: 26px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--bg-2), var(--bg)); overflow: hidden; }
+.kpi { padding: 16px 18px; border-right: 1px solid var(--line); }
+.kpi:last-child { border-right: 0; }
+.kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.1; color: var(--text); }
+.kpi span { display: block; font-size: 10px; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase; color: var(--muted); }
+.kpi.accent b { color: var(--amber-2); }
+.kpi.ok b { color: var(--teal); }
+.kpi.bad b { color: var(--red); }
+
+.method { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; margin-top: 14px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.method > span { padding: 0 12px; border-left: 1px solid var(--line-2); }
+.method > span:first-child { padding-left: 0; border-left: 0; }
+.method b { color: var(--text-2); font-weight: 600; }
+.method .src { color: var(--amber); letter-spacing: .12em; text-transform: uppercase; font-family: var(--sans); font-size: 10.5px; font-weight: 700; }
+
+/* ---------- sections ---------- */
+.sec { margin-top: 54px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 18px; }
+.sec-head h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 30px; letter-spacing: -.01em; }
+.sec-head h2 span { font: 700 11.5px var(--sans); letter-spacing: .24em; color: var(--amber); text-transform: uppercase; margin-right: 14px; vertical-align: 6px; }
+.sec-head p { margin: 0; color: var(--muted); font-size: 13px; max-width: 520px; text-align: right; }
+
+/* ---------- shortlist table ---------- */
+.table-wrap { overflow-x: auto; }
+table.sl { width: 100%; border-collapse: collapse; min-width: 900px; }
+.sl th { text-align: left; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 8px 10px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.sl td { padding: 14px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.sl tr:hover td { background: rgba(255, 255, 255, .015); }
+.sl .r { text-align: right; }
+.sl .rank a { font-family: var(--serif); font-size: 22px; color: var(--amber); }
+.sl .who { display: flex; align-items: center; gap: 12px; min-width: 220px; }
+.sl .who b { display: block; font-weight: 600; font-size: 14.5px; }
+.sl .who small { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12.5px; }
+.sl .num { font-size: 15px; }
+.sl .scorecell { display: flex; align-items: center; gap: 10px; }
+.sl .scorecell b { font-family: var(--serif); font-weight: 400; font-size: 26px; line-height: 1; }
+.sl .bdvals { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 5px; width: 170px; }
+.legend { display: inline-flex; gap: 8px; margin-left: 6px; font-weight: 500; letter-spacing: .06em; }
+.legend i, .sw { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 3px; vertical-align: 0; }
+.dash { color: var(--faint); }
+.flagcount { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; background: var(--teal); }
+.dot.medium { background: var(--amber); }
+.dot.high { background: var(--red); }
+
+/* ---------- shared atoms ---------- */
+.av { position: relative; flex: 0 0 auto; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; background: radial-gradient(120% 120% at 20% 10%, #2B3340, #151920); border: 1px solid var(--line-2); color: var(--amber-2); font-family: var(--serif); }
+.av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.av-sm { width: 38px; height: 38px; font-size: 14px; }
+.av-lg { width: 76px; height: 76px; font-size: 26px; }
+.plat { display: inline-block; font: 700 9.5px var(--sans); letter-spacing: .14em; text-transform: uppercase; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--line-2); color: var(--text-2); }
+.plat-tiktok { border-color: rgba(60, 200, 180, .45); color: var(--teal); }
+.plat-instagram { border-color: rgba(245, 184, 74, .45); color: var(--amber); }
+.verified { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: var(--teal); color: var(--bg); font-size: 10px; font-weight: 800; margin-left: 6px; vertical-align: 2px; }
+.grade { display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 7px; font: 800 13px var(--sans); border: 1px solid; }
+.g-A { color: var(--teal); border-color: var(--teal-line); background: var(--teal-soft); }
+.g-B { color: var(--amber); border-color: var(--amber-line); background: var(--amber-soft); }
+.g-C { color: #E8894A; border-color: rgba(232, 137, 74, .4); background: rgba(232, 137, 74, .1); }
+.g-D, .g-NA { color: var(--red); border-color: var(--red-line); background: var(--red-soft); }
+.bd { position: relative; display: flex; height: 8px; border-radius: 4px; background: var(--bg-4); overflow: hidden; }
+.bd-sm { width: 170px; }
+.bd-lg { width: 100%; height: 10px; border-radius: 5px; }
+.seg { display: block; height: 100%; border-right: 1px solid var(--bg-2); }
+.seg-relevance { background: var(--seg-relevance); }
+.seg-performance { background: var(--seg-performance); }
+.seg-audience { background: var(--seg-audience); }
+.seg-safety { background: var(--seg-safety); }
+.capmark { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--red); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 10px; color: var(--text-2); background: var(--bg-3); }
+.chip em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.chip.comp { border-color: var(--red-line); color: var(--red); background: var(--red-soft); }
+.chip.src { font-family: var(--mono); font-size: 11px; color: var(--amber-2); border-color: var(--amber-line); background: var(--amber-soft); }
+
+/* ---------- creator evidence card ---------- */
+.creator { border: 1px solid var(--line); border-radius: 20px; background: var(--bg-2); padding: 30px 32px 32px; margin-bottom: 30px; }
+.cr-head { display: grid; grid-template-columns: 58px 76px minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+.cr-rank { font-family: var(--serif); font-size: 46px; line-height: .95; color: var(--amber); }
+.cr-id h3 { margin: 2px 0 4px; font-family: var(--serif); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.cr-handle { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; font-size: 14px; }
+.cr-handle .loc { color: var(--muted); font-size: 13px; }
+.cr-stats { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; font-size: 13px; color: var(--text-2); }
+.cr-stats b { color: var(--text); font-weight: 600; }
+.bio { margin: 10px 0 0; color: var(--muted); font-size: 13.5px; max-width: 62ch; }
+.cr-score { background: var(--bg-3); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.cr-score .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cr-score .big { font-family: var(--serif); font-size: 42px; line-height: 1; }
+.cr-score .big small { font-size: 15px; color: var(--muted); }
+.comp { display: grid; grid-template-columns: 1fr; gap: 5px; margin: 12px 0 0; }
+.comp div { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-2); }
+.comp dt { white-space: nowrap; }
+.comp dd { margin: 0; font-family: var(--mono); color: var(--text); font-size: 12px; }
+.comp dd small { color: var(--faint); }
+.caps { margin-top: 10px; font-size: 12px; color: var(--red); }
+.unvetted { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+.judg { margin-top: 24px; border: 1px solid var(--amber-line); background: linear-gradient(135deg, var(--amber-soft), transparent 70%); border-radius: 14px; padding: 18px 20px; }
+.judg-label { display: flex; align-items: center; gap: 10px; font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--amber); font-weight: 700; }
+.judg-label span { color: var(--muted); font-weight: 500; letter-spacing: .12em; }
+.judg-sum { font-family: var(--serif); font-size: 18px; line-height: 1.5; margin: 10px 0 0; }
+.judg-meta { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.judg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 24px; margin-top: 14px; }
+.judg-grid h5 { margin: 0 0 4px; }
+.judg-grid p, .judg-grid ul { margin: 0; font-size: 13.5px; color: var(--text-2); }
+.judg-grid ul { padding-left: 18px; }
+
+.grid { display: grid; gap: 22px 32px; margin-top: 26px; }
+.g-2 { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+.g-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.blk { border-top: 1px solid var(--line); padding-top: 14px; min-width: 0; }
+.blk h4 { margin: 0 0 12px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-2); font-weight: 700; }
+.blk h4 .sub { display: block; margin-top: 3px; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--muted); font-weight: 400; }
+h5 { font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 14px 0 7px; }
+.none { color: var(--muted); font-size: 13px; margin: 0; }
+
+.thumb { position: relative; display: block; aspect-ratio: 9 / 16; border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); background: linear-gradient(160deg, #232A35 0%, #161A21 55%, #1D1A14 100%); }
+.thumb::after { content: ""; position: absolute; left: 50%; top: 50%; width: 0; height: 0; margin: -9px 0 0 -5px; border-style: solid; border-width: 9px 0 9px 14px; border-color: transparent transparent transparent rgba(237, 234, 228, .22); }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.thumb .ov { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 16px 8px 6px; background: linear-gradient(transparent, rgba(0, 0, 0, .78)); font-family: var(--mono); font-size: 10.5px; color: #fff; }
+.tv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px; }
+.tv { color: var(--text); display: block; }
+.tv:hover { text-decoration: none; }
+.tv-cap { display: block; margin-top: 7px; font-size: 12.5px; line-height: 1.4; color: var(--text-2); overflow-wrap: anywhere; }
+.tv-stats { display: block; margin-top: 4px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.via { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+
+.flag { border: 1px solid var(--line-2); border-left: 3px solid var(--amber); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; background: var(--bg-3); }
+.flag.sev-high { border-left-color: var(--red); background: linear-gradient(90deg, var(--red-soft), var(--bg-3) 60%); }
+.flag.sev-low { border-left-color: var(--steel); }
+.flag-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+.sev { font: 700 9.5px var(--sans); letter-spacing: .14em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-line); }
+.sev-high .sev { background: var(--red-soft); color: var(--red); border-color: var(--red-line); }
+.sev-low .sev { color: var(--steel); border-color: var(--line-2); background: transparent; }
+.flag q { display: block; margin-top: 7px; font-family: var(--serif); font-size: 15px; color: var(--text); }
+.flag-meta { margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.clean { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--teal-line); background: var(--teal-soft); border-radius: 12px; padding: 14px 16px; }
+.clean .tick { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--teal); color: var(--bg); font-weight: 900; font-size: 14px; }
+.clean b { display: block; color: var(--teal); font-size: 14.5px; }
+.clean small { display: block; color: var(--text-2); font-size: 12.5px; margin-top: 3px; }
+
+.ev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ev { margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-3); break-inside: avoid; }
+.ev-frames { display: flex; gap: 5px; }
+.kf { display: block; width: 50px; color: var(--muted); }
+.kf:hover { text-decoration: none; }
+.kf .thumb { border-radius: 7px; }
+.kf .thumb::after { display: none; }
+.kf .t { display: block; text-align: center; font-family: var(--mono); font-size: 10px; margin-top: 4px; color: var(--amber-2); }
+.ev blockquote { margin: 0; font-family: var(--serif); font-size: 15.5px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.ev blockquote::before { content: "\201C"; color: var(--amber); margin-right: 2px; }
+.ev blockquote::after { content: "\201D"; color: var(--amber); margin-left: 1px; }
+.ev blockquote.cap { font-family: var(--sans); font-size: 13.5px; color: var(--text-2); }
+.ev blockquote.cap::before, .ev blockquote.cap::after { content: none; }
+.ev-meta { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.ev-audio { margin-top: 5px; font-size: 12px; color: var(--text-2); }
+.ev-audio .copy { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--red-line); color: var(--red); font-size: 10px; margin-left: 4px; }
+.ev-cap { margin-top: 5px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+
+ol.hooks, ul.comments, ul.auth { list-style: none; margin: 0; padding: 0; }
+.hooks li, .comments li { padding: 9px 0; border-bottom: 1px dashed var(--line); }
+.hooks li:last-child, .comments li:last-child { border-bottom: 0; }
+.hooks q, .comments q { display: block; font-family: var(--serif); font-size: 14.5px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; }
+.hooks span, .comments span { display: block; margin-top: 3px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.hooks li { counter-increment: hook; position: relative; padding-left: 26px; }
+.hooks li::before { content: counter(hook, decimal-leading-zero); position: absolute; left: 0; top: 11px; font-family: var(--mono); font-size: 10.5px; color: var(--amber); }
+.auth li { font-size: 13px; color: var(--text-2); padding: 8px 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--amber-line); background: var(--amber-soft); }
+.ok { color: var(--teal); font-size: 13px; margin: 0; }
+
+.langs { display: grid; gap: 7px; margin-bottom: 14px; }
+.lang { display: grid; grid-template-columns: 70px minmax(0, 1fr) 40px; gap: 10px; align-items: center; font-size: 12.5px; color: var(--text-2); }
+.lang i { display: block; height: 6px; border-radius: 3px; background: var(--bg-4); overflow: hidden; }
+.lang i b { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), #6FE0CF); border-radius: 3px; }
+.lang span:last-child { text-align: right; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+dl.kv { margin: 0; display: grid; gap: 0; }
+.kv div { display: flex; justify-content: space-between; gap: 14px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.kv div:last-child { border-bottom: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; color: var(--text); overflow-wrap: anywhere; min-width: 0; }
+.bigline { font-size: 13px; color: var(--text-2); margin: 0 0 4px; }
+.bigline b { font-family: var(--serif); font-weight: 400; font-size: 26px; color: var(--text); margin-right: 6px; vertical-align: -3px; }
+
+/* ---------- footer ---------- */
+.foot { margin-top: 60px; padding-top: 26px; border-top: 1px solid var(--line-2); color: var(--text-2); font-size: 13px; }
+.foot-grid { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 32px; }
+.foot h4 { margin: 0 0 10px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--amber); }
+.foot ul { margin: 0; padding: 0; list-style: none; }
+.foot li { padding: 5px 0; border-bottom: 1px solid var(--line); }
+.foot li:last-child { border-bottom: 0; }
+.foot li b { color: var(--text); font-family: var(--mono); font-weight: 600; }
+.foot p { margin: 0 0 8px; }
+.appendix { margin-top: 28px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.appendix pre { margin: 0; padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; font: 10.5px/1.5 var(--mono); color: var(--muted); white-space: pre-wrap; word-break: break-word; max-height: 360px; overflow: auto; }
+.colophon { margin-top: 26px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1020px) {
+  .hero { grid-template-columns: 1fr; gap: 26px; }
+  .kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kpi:nth-child(4) { border-right: 0; }
+  .kpi:nth-child(-n+4) { border-bottom: 1px solid var(--line); }
+  .cr-head { grid-template-columns: 50px 76px minmax(0, 1fr); }
+  .cr-score { grid-column: 1 / -1; }
+  .g-2, .g-3, .foot-grid, .appendix { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .wrap { padding: 20px 16px 48px; }
+  h1 { font-size: 40px; }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi { border-bottom: 1px solid var(--line); }
+  .kpi:nth-child(2n) { border-right: 0; }
+  .creator { padding: 20px 16px; border-radius: 16px; }
+  .cr-head { grid-template-columns: 1fr; gap: 12px; }
+  .cr-rank { font-size: 34px; }
+  .ev-grid { grid-template-columns: 1fr; }
+  .ev { grid-template-columns: 1fr; }
+  .sec-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .sec-head p { text-align: left; }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .topmeta { justify-content: flex-start; }
+}
+
+/* ---------- print: light editorial theme, one creator per page ---------- */
+@page { size: A4; margin: 12mm 11mm 14mm; }
+@media print {
+  :root {
+    --bg: #FFFFFF; --bg-2: #FFFFFF; --bg-3: #F7F5F0; --bg-4: #ECE8DF;
+    --line: #E3DED4; --line-2: #D3CDC1;
+    --text: #15171B; --text-2: #3B4049; --muted: #6A707B; --faint: #9AA0A9;
+    --amber: #B7791F; --amber-2: #9A6412; --amber-soft: rgba(183, 121, 31, .08); --amber-line: rgba(183, 121, 31, .45);
+    --teal: #1D8C7C; --teal-soft: rgba(29, 140, 124, .08); --teal-line: rgba(29, 140, 124, .45);
+    --red: #C23B3B; --red-soft: rgba(194, 59, 59, .07); --red-line: rgba(194, 59, 59, .45);
+    --steel: #56709A; --sand: #B59D78;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { background: #fff; font-size: 10.5pt; }
+  .wrap { max-width: none; padding: 0; }
+  .noprint { display: none !important; }
+  a { color: inherit; }
+  .hero { padding-top: 22px; gap: 28px; }
+  h1 { font-size: 40pt; }
+  .kpis, .brieftext { background: var(--bg-3); }
+  .sec { margin-top: 28px; }
+  .table-wrap { overflow: visible; }
+  table.sl { min-width: 0; }
+  .sl tr, .blk, .ev, .flag, .judg, .cr-head, .kv div, .hooks li, .comments li { break-inside: avoid; }
+  .sec-head { break-after: avoid; }
+  .blk-words { break-inside: auto; }
+  .blk h4 { break-after: avoid; }
+  .creator { break-before: page; border: 0; border-radius: 0; padding: 0; margin: 0; background: #fff; }
+  .foot { break-before: page; }
+  .appendix pre { max-height: none; overflow: visible; }
+  .av { background: var(--bg-4); color: var(--amber-2); }
+  .thumb { background: linear-gradient(160deg, #E9E5DC, #D9D3C7); }
+  .thumb::after { border-color: transparent transparent transparent rgba(0, 0, 0, .18); }
+  /* A4 is ~720px wide: undo the tablet/phone collapses so print keeps the editorial grid */
+  .hero { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  .facts { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .kpi { padding: 10px 10px; border-bottom: 0 !important; border-right: 1px solid var(--line) !important; }
+  .kpi:last-child { border-right: 0 !important; }
+  .kpi b { font-size: 20pt; }
+  .kpi span { font-size: 7pt; letter-spacing: .06em; }
+  .cr-head { grid-template-columns: 40px 60px minmax(0, 1fr) 210px; gap: 14px; }
+  .cr-score { grid-column: auto; padding: 10px 12px; }
+  .cr-score .big { font-size: 28pt; }
+  .av-lg { width: 60px; height: 60px; font-size: 20px; }
+  .cr-rank { font-size: 30pt; }
+  .g-2 { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
+  .g-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .grid { gap: 14px 20px; margin-top: 16px; }
+  .ev-grid { grid-template-columns: 1fr; gap: 8px; }
+  .ev { padding: 10px; }
+  .foot-grid { grid-template-columns: 1.3fr 1fr 1fr; gap: 20px; }
+  .sec-head { flex-direction: row; align-items: baseline; }
+  .sec-head p { text-align: right; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ===================== COVER ===================== -->
+<header>
+  <div class="topbar">
+    <div class="wordmark">Castable</div>
+    <div class="topmeta">
+      <span>Run <code>{{ run.id or '-' }}</code></span>
+      {% if run.started %}<span>{{ run.started|date('%d %b %Y · %H:%M UTC') }}</span>{% endif %}
+      {% if run.mode %}<span class="mode mode-{{ run.mode }}">{{ run.mode|upper }}</span>{% endif %}
+      <button class="btn noprint" type="button" onclick="window.print()">Print / PDF</button>
+    </div>
+  </div>
+
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Confidential · Creator casting</div>
+      <h1>Creator Casting Dossier</h1>
+      <div class="forline">
+        {%- if brief.brand %}for {{ brief.brand }}{% endif -%}
+        {%- if brief.category %}{% if brief.brand %}<span class="sep">·</span>{% endif %}{{ brief.category|capitalize }}{% endif -%}
+        {%- if brief.region %}<span class="sep">·</span>{{ brief.region|replace('_', ' ')|title }}{% endif -%}
+      </div>
+    </div>
+    {% if run.summary %}
+    <p class="summary" dir="auto">{{ run.summary }}<small>Executive summary</small></p>
+    {% endif %}
+  </div>
+
+  <dl class="facts">
+    <div><dt>Brand</dt><dd>{{ brief.brand or '—' }}</dd></div>
+    <div><dt>Category</dt><dd>{{ (brief.category or '—')|capitalize }}</dd></div>
+    <div><dt>Creators based in</dt><dd>{{ (brief.region or form.region or '—')|replace('_', ' ')|title }}</dd></div>
+    <div><dt>Platforms</dt><dd>{% for pl in brief.platforms or form.platforms or [] %}{{ PLAT.get(pl, pl|title) }}{{ ' + ' if not loop.last }}{% else %}—{% endfor %}</dd></div>
+    <div><dt>Follower band</dt><dd>{{ (brief.follower_band or form.follower_band or '—')|capitalize }}{% if brief.followers_min is number or brief.followers_max is number %} <span class="dim">{{ brief.followers_min|compact }}–{{ brief.followers_max|compact }}</span>{% endif %}</dd></div>
+    <div><dt>Discovery window</dt><dd>{% if brief.days_back or form.days_back %}Last {{ brief.days_back or form.days_back }} days{% else %}—{% endif %}</dd></div>
+    <div><dt>Languages</dt><dd>{% for l in brief.languages or [] %}{{ LANG.get(l, l) }}{{ ', ' if not loop.last }}{% else %}Any{% endfor %}</dd></div>
+    <div><dt>Competitors screened</dt><dd>{% for x in brief.competitors or [] %}{{ x }}{{ ', ' if not loop.last }}{% else %}<span class="dim">None named</span>{% endfor %}{% if brief.avoid_topics %}<br><span class="dim">Avoid: {{ brief.avoid_topics|join(', ') }}</span>{% endif %}</dd></div>
+  </dl>
+
+  {% if brief.text %}
+  <div class="brieftext" dir="auto"><b>The brief</b>{{ brief.text }}</div>
+  {% endif %}
+
+  <div class="kpis">
+    <div class="kpi accent"><b>{{ shortlist|length }}</b><span>Shortlisted</span></div>
+    <div class="kpi"><b>{{ ns.vetted }}</b><span>Vetted</span></div>
+    <div class="kpi ok"><b>{{ ns.clean }}</b><span>Clean</span></div>
+    <div class="kpi{{ ' bad' if ns.flagged }}"><b>{{ ns.flagged }}</b><span>Flagged</span></div>
+    <div class="kpi"><b>{{ ns.videos }}</b><span>Videos audited</span></div>
+    <div class="kpi"><b>{{ ns.quotes }}</b><span>Transcript quotes</span></div>
+    <div class="kpi"><b>{{ ns.frames }}</b><span>Keyframes</span></div>
+  </div>
+
+  <div class="method">
+    <span class="src">Method</span>
+    <span>Oriane: <b>{{ ori.calls if ori.calls is not none else '-' }}</b> calls</span>
+    <span><b>{{ ori.results_fetched_live|int }}</b> results{% if proj %} ({% for k, n in proj|dictsort %}{{ k }} {{ n }}{{ ' / ' if not loop.last }}{% endfor %}){% endif %}</span>
+    <span><b>{{ ori.served_from_cache|int }}</b> cache hits</span>
+    {% if ori.api_execution_ms_avg is number %}<span>API <b>{{ ori.api_execution_ms_avg|num(0) }} ms</b> avg</span>{% endif %}
+    {% if disc.videos is not none and disc.creators is not none %}<span>Discovery <b>{{ disc.videos }}</b> videos → <b>{{ disc.creators }}</b> creators</span>{% endif %}
+    {% if disc.visual_asset %}<span>Visual similarity asset <b>{{ disc.visual_asset }}</b></span>{% endif %}
+    <span>LLM <b>{{ st.llm or 'none' }}</b>{% if form.use_llm is sameas false %} (judgment off){% elif ns.judged %} ({{ ns.judged }} judged){% endif %}</span>
+    {% if st.seconds is not none %}<span><b>{{ st.seconds }}</b> s end-to-end</span>{% endif %}
+  </div>
+  {% for w in run.warnings or [] %}<p class="caps">⚠ {{ w }}</p>{% endfor %}
+  {% if run.error %}<p class="caps">⚠ {{ run.error }}</p>{% endif %}
+</header>
+
+<!-- ===================== SHORTLIST ===================== -->
+<section class="sec">
+  <div class="sec-head">
+    <h2><span>01</span>Shortlist</h2>
+    <p>Ranked by a transparent composite score; vetted creators first. The bar shows each component's weighted contribution out of 100.</p>
+  </div>
+  {% if shortlist %}
+  <div class="table-wrap">
+  <table class="sl">
+    <thead>
+      <tr>
+        <th>#</th><th>Creator</th><th class="r">Followers</th><th>Score</th>
+        <th>Breakdown <span class="legend">{% for k in COMPS %}<span><i class="seg-{{ k }}"></i>{{ k[:1]|upper }}</span>{% endfor %}</span></th>
+        <th class="r">Matches</th><th class="r">ER / view</th><th class="r">Flags</th><th class="r">Sponsored</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for row in shortlist %}
+      {%- set c = row.candidate or {} -%}
+      {%- set p = row.profile or {} -%}
+      {%- set v = row.vetting -%}
+      {%- set s = row.score or {} -%}
+      {%- set comps = s.components or {} -%}
+      {%- set url = profile_url(c.platform or p.platform, c.handle or p.handle) -%}
+      {%- set flags = (v.flags if v else []) or [] -%}
+      <tr>
+        <td class="rank"><a href="#c-{{ loop.index }}">{{ '%02d'|format(loop.index) }}</a></td>
+        <td>
+          <div class="who">
+            {{ avatar(p, c, 'sm') }}
+            <div>
+              <b dir="auto">{{ p.displayName or c.displayName or c.handle or 'Unknown creator' }}{% if p.isVerified %}<span class="verified" title="Verified">✓</span>{% endif %}</b>
+              <small>{% if url %}<a href="{{ url }}">@{{ c.handle or p.handle }}</a>{% else %}@{{ c.handle or p.handle or '?' }}{% endif %}{% if c.platform %}<span class="plat plat-{{ c.platform }}">{{ PLAT.get(c.platform, c.platform) }}</span>{% endif %}</small>
+            </div>
+          </div>
+        </td>
+        <td class="r num">{{ (p.followersCount or c.followers)|int }}</td>
+        <td><div class="scorecell"><b>{{ s.total if s.total is not none else '-' }}</b>{{ grade_pill(s) }}</div></td>
+        <td>
+          {{ breakdown(s, 'sm') }}
+          <div class="bdvals">{% for k in COMPS %}<span title="{{ k }}">{{ comps.get(k)|num(0) }}</span>{% endfor %}</div>
+        </td>
+        <td class="r num">{{ c.matching_videos if c.matching_videos is not none else '-' }}</td>
+        <td class="r num">{{ c.er_views_mean|pct }}</td>
+        <td class="r">
+          {%- if not v -%}<span class="dash" title="Not vetted this run">not vetted</span>
+          {%- else -%}
+            {%- set sev = 'high' if (flags|selectattr('severity', 'equalto', 'high')|list) else ('medium' if flags else 'none') -%}
+            <span class="flagcount"><i class="dot {{ sev }}"></i>{{ flags|length }}</span>
+          {%- endif -%}
+        </td>
+        <td class="r num">{{ v.sponsored_posts if v and v.sponsored_posts is not none else '—' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="none">No creators matched this brief.</p>
+  {% endif %}
+</section>
+
+<!-- ===================== EVIDENCE ===================== -->
+{% if shortlist %}
+<section class="sec">
+  <div class="sec-head">
+    <h2><span>02</span>Evidence</h2>
+    <p>Everything below comes from the creators' own videos: verbatim transcript chunks with timestamps, keyframes, hooks, comments and sponsorship signals.</p>
+  </div>
+
+  {% for row in shortlist %}
+  {%- set c = row.candidate or {} -%}
+  {%- set p = row.profile or {} -%}
+  {%- set v = row.vetting -%}
+  {%- set s = row.score or {} -%}
+  {%- set j = row.judgment -%}
+  {%- set comps = s.components or {} -%}
+  {%- set sw = s.weights or W -%}
+  {%- set handle = c.handle or p.handle -%}
+  {%- set platform = c.platform or p.platform -%}
+  {%- set url = profile_url(platform, handle) -%}
+  {%- set loc = p.locationCompleteAddress -%}
+  {%- set mq = c.matched_queries -%}
+  {%- set mq = (mq.keys()|list) if mq is mapping else (mq or []) -%}
+  {%- set mix = (v.language_mix if v else none) or c.languages or {} -%}
+  {%- set mix_total = (mix.values()|sum) if mix is mapping else 0 -%}
+  <article class="creator" id="c-{{ loop.index }}">
+    <header class="cr-head">
+      <div class="cr-rank">{{ '%02d'|format(loop.index) }}</div>
+      {{ avatar(p, c, 'lg') }}
+      <div class="cr-id">
+        <h3 dir="auto">{{ p.displayName or c.displayName or handle or 'Unknown creator' }}{% if p.isVerified %}<span class="verified" title="Verified">✓</span>{% endif %}</h3>
+        <div class="cr-handle">
+          {% if url %}<a href="{{ url }}">@{{ handle }}</a>{% else %}<span>@{{ handle or '?' }}</span>{% endif %}
+          {% if platform %}<span class="plat plat-{{ platform }}">{{ PLAT.get(platform, platform) }}</span>{% endif %}
+          {% if loc %}<span class="loc">{{ loc }}</span>{% endif %}
+        </div>
+        <div class="cr-stats">
+          <span><b>{{ (p.followersCount or c.followers)|compact }}</b> followers</span>
+          {% if p.postsCount is number %}<span><b>{{ p.postsCount|int }}</b> posts</span>{% endif %}
+          {% if p.likesCount is number %}<span><b>{{ p.likesCount|compact }}</b> total likes</span>{% endif %}
+          {% if c.views_sum is number %}<span><b>{{ c.views_sum|compact }}</b> views on matching videos</span>{% endif %}
+          {% if c.er_views_mean is number %}<span>ER / view <b>{{ c.er_views_mean|pct }}</b></span>{% endif %}
+        </div>
+        {% if p.bio %}<p class="bio" dir="auto">{{ p.bio|tags }}</p>{% endif %}
+      </div>
+      <div class="cr-score">
+        <div class="top">
+          <div class="big">{{ s.total if s.total is not none else '-' }}<small> / 100</small></div>
+          {{ grade_pill(s) }}
+        </div>
+        {{ breakdown(s, 'lg') }}
+        <dl class="comp">
+          {% for k in COMPS %}
+          <div><dt><i class="sw seg-{{ k }}"></i>{{ k|capitalize }}</dt><dd>{{ comps.get(k)|num(0) }} <small>×{{ sw.get(k) }}</small></dd></div>
+          {% endfor %}
+        </dl>
+        {% if s.ai_fit is not none and s.heuristic is not none %}<div class="caps">Blend: 60% evidence score {{ s.heuristic }} + 40% AI fit {{ s.ai_fit }}</div>{% endif %}
+        {% if s.caps %}<div class="caps">Capped: {{ s.caps|join('; ') }}</div>{% endif %}
+        {% if not v %}<div class="unvetted">Not vetted this run: safety scored as unknown, not clean.</div>{% endif %}
+      </div>
+    </header>
+
+    {% if j and (j.fit_summary or j.recommended_angle or j.best_hook or j.risks or j.why_not) %}
+    <div class="judg">
+      <div class="judg-label">Casting judgment <span>LLM, bound to the evidence below</span></div>
+      {% if j.fit_summary %}<p class="judg-sum" dir="auto">{{ j.fit_summary }}</p>{% endif %}
+      {% if j.fit_score is not none or j.tone_match %}
+      <div class="judg-meta">
+        {% if j.fit_score is not none %}<span class="chip src">Fit {{ j.fit_score }}/100</span>{% endif %}
+        {% if j.tone_match %}<span class="chip">Tone match: {{ j.tone_match }}</span>{% endif %}
+      </div>
+      {% endif %}
+      <div class="judg-grid">
+        {% if j.recommended_angle %}<div><h5>Recommended angle</h5><p dir="auto">{{ j.recommended_angle }}</p></div>{% endif %}
+        {% if j.best_hook %}<div><h5>Best hook</h5><p dir="auto"><q>{{ j.best_hook }}</q></p></div>{% endif %}
+        {% if j.risks %}<div><h5>Risks</h5><ul>{% if j.risks is string %}<li dir="auto">{{ j.risks }}</li>{% else %}{% for r in j.risks %}<li dir="auto">{{ r }}</li>{% endfor %}{% endif %}</ul></div>{% endif %}
+        {% if j.why_not %}<div><h5>Why not</h5><p dir="auto">{{ j.why_not }}</p></div>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="grid g-2">
+      <!-- Why they match -->
+      <div class="blk">
+        <h4>Why they match
+          <span class="sub">{% if c.matching_videos is not none %}{{ c.matching_videos }} recent video{{ 's' if c.matching_videos != 1 }} matched the brief{% else %}Matched the brief{% endif %}{% if brief.days_back %} in the last {{ brief.days_back }} days{% endif %}</span>
+        </h4>
+        {% if mq or c.visual_best_rank %}
+        <div class="via">
+          {% for q in mq %}<span class="chip src">{{ q }} match</span>{% endfor %}
+          {% if c.visual_best_rank %}<span class="chip src">visual similarity #{{ c.visual_best_rank }}</span>{% endif %}
+        </div>
+        {% endif %}
+        {% set tvs = c.top_videos or [] %}
+        {% if tvs %}
+        <div class="tv-grid">
+          {% for t in tvs[:4] %}
+          {%- set turl = href(t|video_url) or url -%}
+          <a class="tv" {% if turl %}href="{{ turl }}"{% endif %}>
+            <span class="thumb">{% if href(t.thumbnailMediaUrl) %}<img src="{{ t.thumbnailMediaUrl }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}<span class="ov">{{ t.viewsCount|compact }} views{% if t.duration is number %} · {{ t.duration|ts }}{% endif %}</span></span>
+            {% if t.caption %}<span class="tv-cap" dir="auto">{{ t.caption|truncate(80)|tags }}</span>{% endif %}
+            <span class="tv-stats">{{ t.likesCount|compact }} likes · ER {{ t.engagementRatePerViews|pct }}{% if t.publishedAt %} · {{ t.publishedAt|date('%d %b') }}{% endif %}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="none">No matching videos returned for this creator.</p>
+        {% endif %}
+      </div>
+
+      <!-- Brand safety -->
+      <div class="blk">
+        <h4>Brand safety
+          <span class="sub">{% if v %}{{ v.videos_checked if v.videos_checked is not none else 'Recent' }} recent videos{% if v.window_days %} · {{ v.window_days }}-day window{% endif %} · transcripts + captions{% else %}Not vetted in this run{% endif %}</span>
+        </h4>
+        {% if v %}
+          {% set flags = v.flags or [] %}
+          {% if flags %}
+            {% for f in flags %}
+            <div class="flag sev-{{ f.severity or 'medium' }}">
+              <div class="flag-top"><span class="sev">{{ f.severity or 'flag' }}</span><b>{{ FLAG.get(f.type, (f.type or 'flag')|replace('_', ' ')|capitalize) }}</b>{% if f.term %}<span class="dim">term “<span dir="auto">{{ f.term }}</span>”</span>{% endif %}</div>
+              {% if f.quote %}<q dir="auto">{{ f.quote }}</q>{% endif %}
+              <div class="flag-meta">
+                {%- if f.t is not none %}at {{ f.t|ts }}{% endif -%}
+                {%- if f.published %}{{ ' · ' if f.t is not none }}posted {{ f.published|date }}{% endif -%}
+                {%- if href(f.link) %} · <a href="{{ f.link }}">open video ↗</a>{% endif -%}
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="clean">
+              <span class="tick">✓</span>
+              <div><b>No flags in {{ v.videos_checked if v.videos_checked is not none else 'the recent' }} videos{% if v.window_days %} / {{ v.window_days }} days{% endif %}</b>
+              <small>Checked {{ 'competitor mentions (' ~ brief.competitors|join(', ') ~ '), ' if brief.competitors }}{{ 'avoid-list topics, ' if brief.avoid_topics }}and the brand-safety risk lexicon (English + Arabic) across transcripts and captions.</small></div>
+            </div>
+          {% endif %}
+        {% else %}
+          <p class="none">This creator ranked outside the vetted top K for this run, so recent videos were not audited. Safety is scored as unknown (not clean).</p>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if v and v.evidence_videos %}
+    <div class="grid">
+      <div class="blk blk-words">
+        <h4>In their own words
+          <span class="sub">Verbatim transcript chunks and keyframes from {{ v.evidence_videos|length }} recent video{{ 's' if v.evidence_videos|length != 1 }}; timestamps are mm:ss into the video</span>
+        </h4>
+        <div class="ev-grid">
+          {% for e in v.evidence_videos %}
+          {%- set elink = href(e.link) or url -%}
+          <figure class="ev">
+            <div class="ev-frames">
+              {% set frames = e.frames or [] %}
+              {% for f in frames[:3] %}
+              <a class="kf" {% if elink %}href="{{ elink }}"{% endif %}><span class="thumb">{% if href(f.url) %}<img src="{{ f.url }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span><span class="t">{{ f.t|ts or '–' }}</span></a>
+              {% else %}
+              <a class="kf" {% if elink %}href="{{ elink }}"{% endif %}><span class="thumb">{% if href(e.thumbnail) %}<img src="{{ e.thumbnail }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span><span class="t">cover</span></a>
+              {% endfor %}
+            </div>
+            <figcaption>
+              {% if e.transcript_excerpt %}<blockquote dir="auto">{{ e.transcript_excerpt }}</blockquote>
+              {% elif e.caption %}<blockquote class="cap" dir="auto">{{ e.caption|tags }}</blockquote>
+              {% else %}<blockquote class="cap">No transcript for this video.</blockquote>{% endif %}
+              <div class="ev-meta">
+                {{- e.views|compact }} views · ER {{ e.er_views|pct }}
+                {%- if e.published %} · {{ e.published|date }}{% endif -%}
+                {%- if e.duration is number %} · {{ e.duration|ts }}{% endif -%}
+                {%- if e.language %} · {{ LANG.get(e.language, e.language) }}{% endif -%}
+              </div>
+              {% set au = e.audio or {} %}
+              {% if au.title or au.author %}<div class="ev-audio">♪ {{ au.title or 'Untitled audio' }}{% if au.author %} · {{ au.author }}{% endif %}{% if au.copyrighted %}<span class="copy" title="Copyrighted audio: check usage rights before whitelisting">©</span>{% endif %}</div>{% endif %}
+              {% if e.caption and e.transcript_excerpt %}<div class="ev-cap"><span>Caption:</span> <bdi dir="auto">{{ e.caption|truncate(100)|tags }}</bdi></div>{% endif %}
+            </figcaption>
+          </figure>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if v %}
+    <div class="grid g-3">
+      <!-- Hooks -->
+      <div class="blk">
+        <h4>Hooks that work <span class="sub">Opening lines of their best-performing videos</span></h4>
+        {% set hooks = v.hooks or [] %}
+        {% if hooks %}
+        <ol class="hooks">
+          {% for h in hooks[:5] %}
+          <li><q dir="auto">{{ h.hook }}</q><span>{{ h.views|compact }} views · ER {{ h.er|pct }}{% if href(h.link) %} · <a href="{{ h.link }}">open ↗</a>{% endif %}</span></li>
+          {% endfor %}
+        </ol>
+        {% else %}<p class="none">No spoken hooks detected.</p>{% endif %}
+      </div>
+
+      <!-- Audience signals -->
+      <div class="blk">
+        <h4>Audience signals <span class="sub">Medians across the audited videos</span></h4>
+        {% if mix is mapping and mix_total %}
+        <div class="langs">
+          {% for k, n in mix|dictsort(by='value', reverse=true) %}
+          <div class="lang"><span>{{ LANG.get(k, k) }}</span><i><b style="width: {{ '%.1f'|format(100 * n / mix_total) }}%"></b></i><span>{{ '%.0f'|format(100 * n / mix_total) }}%</span></div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <dl class="kv">
+          {% if v.cadence_per_week is not none %}<div><dt>Posting cadence</dt><dd>{{ v.cadence_per_week|num(1) }} / week</dd></div>{% endif %}
+          {% if v.last_post_days_ago is not none %}<div><dt>Last post</dt><dd>{{ v.last_post_days_ago }} days ago</dd></div>{% endif %}
+          {% if v.views_per_follower_median is not none %}<div><dt>Views per follower</dt><dd>{{ v.views_per_follower_median|num(2) }}×</dd></div>{% endif %}
+          {% if v.er_views_median is not none %}<div><dt>ER per view</dt><dd>{{ v.er_views_median|pct }}</dd></div>{% endif %}
+          {% if v.er_followers_median is not none %}<div><dt>ER per follower</dt><dd>{{ v.er_followers_median|pct }}</dd></div>{% endif %}
+          {% if v.comment_like_ratio_median is not none %}<div><dt>Comments / likes</dt><dd>{{ v.comment_like_ratio_median|pct }}</dd></div>{% endif %}
+          {% if v.audio_copyrighted_share is not none %}<div><dt>Copyrighted audio</dt><dd>{{ v.audio_copyrighted_share|pct(0) }}</dd></div>{% endif %}
+          {% if comps.get('performance') is number %}<div><dt>Performance percentile</dt><dd>{{ comps.get('performance')|num(0) }} / 100 in pool</dd></div>{% endif %}
+        </dl>
+      </div>
+
+      <!-- Sponsorship -->
+      <div class="blk">
+        <h4>Sponsorship &amp; brands <span class="sub">Paid-partnership tags, disclosure words and @mentions</span></h4>
+        {% if v.sponsored_posts is not none %}<p class="bigline"><b>{{ v.sponsored_posts }}</b>sponsored post{{ 's' if v.sponsored_posts != 1 }}{% if v.videos_checked %} in {{ v.videos_checked }} videos{% endif %}</p>{% endif %}
+        {% if v.sponsored_partners %}
+        <h5>Paid partners</h5>
+        <div class="chips">
+          {% for it in v.sponsored_partners %}{% set nm = pair_name(it)|string %}{% set n = pair_count(it)|string %}
+          <span class="chip{{ ' comp' if (nm|lower|replace(' ', '')|replace('.', '')) in comp_norm }}">@{{ nm }}{% if n %} <em>×{{ n }}</em>{% endif %}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if v.mentioned_brands %}
+        <h5>Mentioned brands</h5>
+        <div class="chips">
+          {% for it in v.mentioned_brands %}{% set nm = pair_name(it)|string %}{% set n = pair_count(it)|string %}
+          <span class="chip{{ ' comp' if (nm|lower|replace(' ', '')|replace('.', '')) in comp_norm }}">@{{ nm }}{% if n %} <em>×{{ n }}</em>{% endif %}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% if not v.sponsored_partners and not v.mentioned_brands %}<p class="none">No brand partners detected.</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="grid g-3">
+      <!-- Comments -->
+      <div class="blk">
+        <h4>What their audience says <span class="sub">Top comments by likes</span></h4>
+        {% set cms = v.top_comments or [] %}
+        {% if cms %}
+        <ul class="comments">
+          {% for cm in cms[:5] %}
+          <li><q dir="auto">{{ cm.content }}</q><span>{% if cm.handle %}@{{ cm.handle }} · {% endif %}{{ cm.likes|compact }} likes</span></li>
+          {% endfor %}
+        </ul>
+        {% else %}<p class="none">No comments retrieved.</p>{% endif %}
+      </div>
+
+      <!-- Authenticity -->
+      <div class="blk">
+        <h4>Authenticity <span class="sub">Engagement-ratio heuristics</span></h4>
+        {% if v.authenticity_notes %}
+        <ul class="auth">{% for n in v.authenticity_notes %}<li>⚠ {{ n }}</li>{% endfor %}</ul>
+        {% else %}
+        <p class="ok">✓ No anomalies: ER per follower, comments-to-likes and views-to-followers are within normal ranges.</p>
+        {% endif %}
+      </div>
+
+      <!-- Contact -->
+      <div class="blk">
+        <h4>Contact <span class="sub">Public profile data</span></h4>
+        <dl class="kv">
+          {% if p.publicEmail %}<div><dt>Email</dt><dd><a href="mailto:{{ p.publicEmail }}">{{ p.publicEmail }}</a></dd></div>{% endif %}
+          {% if href(p.bioLink) %}<div><dt>Link in bio</dt><dd><a href="{{ p.bioLink }}">{{ p.bioLink|replace('https://', '')|replace('http://', '') }}</a></dd></div>{% endif %}
+          {% if loc %}<div><dt>Location</dt><dd>{{ loc }}</dd></div>{% endif %}
+          {% if url %}<div><dt>Profile</dt><dd><a href="{{ url }}">{{ url|replace('https://www.', '') }}</a></dd></div>{% endif %}
+        </dl>
+        {% if not p.publicEmail and not p.bioLink %}<p class="none" style="margin-top:8px">No public email or link; reach out via DM.</p>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="grid g-3">
+      <div class="blk">
+        <h4>Audience signals <span class="sub">From matching videos</span></h4>
+        {% if mix is mapping and mix_total %}
+        <div class="langs">
+          {% for k, n in mix|dictsort(by='value', reverse=true) %}
+          <div class="lang"><span>{{ LANG.get(k, k) }}</span><i><b style="width: {{ '%.1f'|format(100 * n / mix_total) }}%"></b></i><span>{{ '%.0f'|format(100 * n / mix_total) }}%</span></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="none">No language data.</p>{% endif %}
+      </div>
+      <div class="blk">
+        <h4>Hashtags <span class="sub">Across matching videos</span></h4>
+        {% if c.hashtags %}<div class="chips">{% for h in c.hashtags[:10] %}<span class="chip" dir="auto">#{{ (h|string).lstrip('#') }}</span>{% endfor %}</div>{% else %}<p class="none">No hashtags.</p>{% endif %}
+      </div>
+      <div class="blk">
+        <h4>Contact <span class="sub">Public profile data</span></h4>
+        <dl class="kv">
+          {% if p.publicEmail %}<div><dt>Email</dt><dd><a href="mailto:{{ p.publicEmail }}">{{ p.publicEmail }}</a></dd></div>{% endif %}
+          {% if href(p.bioLink) %}<div><dt>Link in bio</dt><dd><a href="{{ p.bioLink }}">{{ p.bioLink|replace('https://', '')|replace('http://', '') }}</a></dd></div>{% endif %}
+          {% if loc %}<div><dt>Location</dt><dd>{{ loc }}</dd></div>{% endif %}
+          {% if url %}<div><dt>Profile</dt><dd><a href="{{ url }}">{{ url|replace('https://www.', '') }}</a></dd></div>{% endif %}
+        </dl>
+      </div>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<!-- ===================== FOOTER ===================== -->
+<footer class="foot">
+  <div class="foot-grid">
+    <div>
+      <h4>How the score works</h4>
+      <ul>
+        <li><i class="sw seg-relevance"></i> Relevance <b>{{ '%.0f'|format((W.relevance or 0) * 100) }}%</b> · how much recent work matches the brief (transcript, caption and visual-similarity hits)</li>
+        <li><i class="sw seg-performance"></i> Performance <b>{{ '%.0f'|format((W.performance or 0) * 100) }}%</b> · ER-per-view percentile in the candidate pool (70%) blended with reach (30%)</li>
+        <li><i class="sw seg-audience"></i> Audience <b>{{ '%.0f'|format((W.audience or 0) * 100) }}%</b> · follower band, language fit and region</li>
+        <li><i class="sw seg-safety"></i> Safety <b>{{ '%.0f'|format((W.safety or 0) * 100) }}%</b> · 100 minus flag penalties (high −{{ P.high }}, medium −{{ P.medium }}, low −{{ P.low }}; authenticity note −8)</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Caps &amp; rules</h4>
+      <ul>
+        <li>A competitor mention in the last 180 days caps the total at <b>69</b>: never an A.</li>
+        <li>Creators not vetted this run get safety <b>70</b>: unknown, not clean.</li>
+        <li>Grades: <b>A</b> ≥ 80 · <b>B</b> ≥ 65 · <b>C</b> ≥ 50 · <b>D</b> below.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Source</h4>
+      <p>Evidence retrieved from Oriane Connect (connect.oriane.xyz); quotes are verbatim transcript chunks. Timestamps (mm:ss) point to the moment in the video; keyframes are Oriane-extracted frames.</p>
+      <p>Engagement figures are as reported by the platforms at retrieval time.</p>
+      {% if public_url %}<p class="noprint">Live version: <a href="{{ public_url }}/dossier/{{ run.id }}">{{ public_url }}/dossier/{{ run.id }}</a></p>{% endif %}
+    </div>
+  </div>
+
+  {% if disc.query or run.log %}
+  <div class="appendix">
+    {% if disc.query %}
+    <div>
+      <h4>Appendix A · Discovery query sent to Oriane</h4>
+      <pre dir="ltr">{{ disc.query|tojson(indent=2) }}</pre>
+    </div>
+    {% endif %}
+    {% if run.log %}
+    <div>
+      <h4>Appendix B · Run log</h4>
+      <pre dir="ltr">{{ run.log|join('\n') }}</pre>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <div class="colophon">
+    <span>Castable · Creator Casting Dossier</span>
+    <span>Run {{ run.id or '-' }}{% if run.finished %} · generated {{ run.finished|date('%d %b %Y, %H:%M UTC') }}{% endif %}</span>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>

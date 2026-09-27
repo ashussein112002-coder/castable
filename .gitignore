@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+data/cache/
+data/runs/
+data/credits.jsonl
+data/auth_style.txt
+data/scout.log
+data/scout.pid
+docs/screens/*-full.png
+.DS_Store
+_to_delete/

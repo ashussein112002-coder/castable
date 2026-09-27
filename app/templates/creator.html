@@ -1,0 +1,849 @@
+{#- Castable: creator-facing Brand-Readiness Report.
+    Self-contained (inline CSS + a tiny inline copy script; no external assets besides creator media URLs).
+    Every field is optional: live Oriane data may omit anything the mock provides. -#}
+{%- set LANG = {'ar': 'Arabic', 'en': 'English', 'fr': 'French', 'hi': 'Hindi', 'ur': 'Urdu', 'es': 'Spanish', 'tl': 'Tagalog', 'ru': 'Russian', 'tr': 'Turkish', 'fa': 'Persian', 'de': 'German', 'it': 'Italian', 'pt': 'Portuguese', 'ml': 'Malayalam', 'bn': 'Bengali', 'id': 'Indonesian', 'zh': 'Chinese', 'ko': 'Korean', 'ja': 'Japanese'} -%}
+{%- set PLAT = {'tiktok': 'TikTok', 'instagram': 'Instagram', 'youtube': 'YouTube'} -%}
+{%- set FLAG = {'competitor_mention': 'Competitor mention', 'avoid_topic': 'Avoid-list topic', 'drugs_vape': 'Drugs / vape', 'gambling_scams': 'Gambling / scams', 'weapons_violence': 'Weapons / violence', 'political_religious': 'Political / religious', 'adult': 'Adult content', 'alcohol': 'Alcohol', 'profanity': 'Profanity'} -%}
+{%- set COMPS = ['consistency', 'engagement', 'safety', 'market_fit'] -%}
+{%- set CLABEL = {'consistency': 'Consistency', 'engagement': 'Engagement', 'safety': 'Brand safety', 'market_fit': 'Market fit'} -%}
+{%- set CHELP = {'consistency': 'How often and how recently you post. 2+ posts a week scores 100; silence past 30 days costs points.', 'engagement': 'Your engagement per view vs. creators next to you (70%), blended with views per follower (30%).', 'safety': '100 minus a penalty per flag in your recent videos: high -35, medium -12, low -5.', 'market_fit': '30 base, +12 per brand already paying creators next to you (max +50), +20 if you have sponsor history.'} -%}
+{%- set VERDICT = {'A': 'Brand-ready. Start pitching.', 'B': 'Almost there. Pitch now, fix a few things.', 'C': 'Getting there. Fix the basics first.', 'D': 'Not yet. Work the fix list before pitching.'} -%}
+{%- set r = report or {} -%}
+{%- set p = r.profile or {} -%}
+{%- set a = r.self_audit or {} -%}
+{%- set s = r.score or {} -%}
+{%- set plan = r.plan or {} -%}
+{%- set bench = r.benchmark or {} -%}
+{%- set disc = r.discovery or {} -%}
+{%- set market = r.market or [] -%}
+{%- set peers = r.peers or [] -%}
+{%- set topics = r.topics or [] -%}
+{%- set flags = a.flags or [] -%}
+{%- set fixes = plan.fix_before_pitching or [] -%}
+{%- set pitches = plan.pitches or [] -%}
+{%- set evidence = a.evidence_videos or [] -%}
+{%- set hooks = a.hooks or [] -%}
+{%- set comments = a.top_comments or [] -%}
+{%- set st = run.stats or {} -%}
+{%- set ori = st.oriane or {} -%}
+{%- set form = run.form or {} -%}
+{%- set handle = (p.handle or r.handle or form.handle or '')|string -%}
+{%- set platform = p.platform or ((r.platforms or [])[0] if r.platforms else '') -%}
+{%- set mode = (run.mode or 'mock')|string -%}
+{%- set ns = namespace(peer_sp=0, frames=0, quotes=0) -%}
+{%- for k, v in (r.peer_sponsor_summary or {}).items() -%}{%- if v is mapping and v.sponsored_posts is number -%}{%- set ns.peer_sp = ns.peer_sp + v.sponsored_posts -%}{%- endif -%}{%- endfor -%}
+{%- if not ns.peer_sp -%}{%- for m in market -%}{%- if m.sponsored_posts is number -%}{%- set ns.peer_sp = ns.peer_sp + m.sponsored_posts -%}{%- endif -%}{%- endfor -%}{%- endif -%}
+{%- set vid_links = {} -%}
+{%- for e in evidence -%}
+  {%- set ns.frames = ns.frames + (e.frames or [])|length -%}
+  {%- if e.transcript_excerpt -%}{%- set ns.quotes = ns.quotes + 1 -%}{%- endif -%}
+  {%- if e.id -%}{%- set _ = vid_links.update({e.id: e}) -%}{%- endif -%}
+{%- endfor -%}
+
+{%- macro profile_url(pl, h) -%}
+{%- if h -%}{%- if pl == 'tiktok' -%}https://www.tiktok.com/@{{ h }}{%- else -%}https://www.instagram.com/{{ h }}/{%- endif -%}{%- endif -%}
+{%- endmacro -%}
+{%- macro href(u) -%}{%- if u and ((u|string).startswith('http://') or (u|string).startswith('https://')) -%}{{ u }}{%- endif -%}{%- endmacro -%}
+{%- macro pair_name(it) -%}{%- if it is mapping -%}{{ it.get('brand') or it.get('name') or it.get('handle') or '' }}{%- elif it is string -%}{{ it }}{%- elif it -%}{{ it[0] }}{%- endif -%}{%- endmacro -%}
+{%- macro pair_count(it) -%}{%- if it is mapping -%}{{ it.get('count') or it.get('n') or '' }}{%- elif it is string -%}{%- elif it and it|length > 1 -%}{{ it[1] }}{%- endif -%}{%- endmacro -%}
+{%- macro initials(name) -%}
+{%- set words = (name or '?')|string|replace('.', ' ')|replace('_', ' ')|replace('-', ' ')|replace('@', '')|trim -%}
+{%- set words = words.split() -%}
+{{- ((words[0][0] if words else '?') ~ (words[1][0] if words|length > 1 else ''))|upper -}}
+{%- endmacro -%}
+{%- macro avatar(pic, name, size) -%}
+<span class="av av-{{ size }}" aria-hidden="true"><span>{{ initials(name) }}</span>{% if href(pic) %}<img src="{{ pic }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}</span>
+{%- endmacro -%}
+{%- macro ordinal(n) -%}
+{%- if n is number -%}{%- set x = n|round -%}{%- set m100 = x % 100 -%}{%- set m10 = x % 10 -%}{{ '%d'|format(x) }}{% if m100 in [11, 12, 13] %}th{% elif m10 == 1 %}st{% elif m10 == 2 %}nd{% elif m10 == 3 %}rd{% else %}th{% endif %}{%- else -%}–{%- endif -%}
+{%- endmacro -%}
+{%- macro thumb(url, label) -%}
+<span class="thumb">{% if href(url) %}<img src="{{ url }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">{% endif %}{% if label %}<span class="ov">{{ label }}</span>{% endif %}</span>
+{%- endmacro -%}
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Castable Brand-Readiness Report{% if handle %} for @{{ handle }}{% endif %}: what you make, what to fix, who is buying, and your pitches, with receipts.">
+{%- if run.status in ['queued', 'running'] %}
+<meta http-equiv="refresh" content="4">
+{%- endif %}
+<title>{% if handle %}@{{ handle }} · {% endif %}Brand-Readiness Report · Castable</title>
+<style>
+:root {
+  --bg: #0B0D10; --bg-2: #101317; --bg-3: #151920; --bg-4: #1B2028;
+  --line: #222831; --line-2: #2E3540;
+  --text: #EDEAE4; --text-2: #BDB9B1; --muted: #7F8793; --faint: #555C67;
+  --amber: #F5B84A; --amber-2: #FFD58A; --amber-soft: rgba(245, 184, 74, .10); --amber-line: rgba(245, 184, 74, .35);
+  --teal: #3CC8B4; --teal-soft: rgba(60, 200, 180, .10); --teal-line: rgba(60, 200, 180, .35);
+  --red: #EF6B6B; --red-soft: rgba(239, 107, 107, .10); --red-line: rgba(239, 107, 107, .40);
+  --steel: #7C93B5; --sand: #CDBB9E;
+  --c-consistency: var(--steel); --c-engagement: var(--amber); --c-safety: var(--teal); --c-market_fit: var(--sand);
+  --serif: "Iowan Old Style", Charter, "Palatino Linotype", Palatino, Georgia, Cambria, Caladea, "Noto Naskh Arabic", "DejaVu Serif", serif;
+  --sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Arabic", "Geeza Pro", Tahoma, "DejaVu Sans", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: radial-gradient(1100px 460px at 88% -8%, rgba(245, 184, 74, .07), transparent 60%), var(--bg); color: var(--text); font: 14.5px/1.55 var(--sans); font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+a { color: var(--amber-2); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+q { quotes: "\201C" "\201D"; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 40px 64px; }
+
+/* ---------- top bar ---------- */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+.wordmark { display: flex; align-items: center; gap: 10px; color: var(--text); }
+.wordmark:hover { text-decoration: none; }
+.wordmark .mk { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: linear-gradient(135deg, var(--amber), #D9892A); color: #151515; font: 400 18px var(--serif); }
+.wordmark b { font-weight: 800; letter-spacing: .24em; font-size: 12.5px; text-transform: uppercase; }
+.wordmark small { display: block; color: var(--muted); font-size: 11px; letter-spacing: .02em; margin-top: 1px; }
+.topmeta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.mode { border: 1px solid var(--line-2); border-radius: 999px; padding: 2px 9px; letter-spacing: .12em; font-weight: 700; font-family: var(--sans); font-size: 10.5px; }
+.mode-live { color: var(--teal); border-color: var(--teal-line); }
+.mode-mock { color: var(--amber); border-color: var(--amber-line); }
+.mode-offline { color: var(--red); border-color: var(--red-line); }
+.btn { display: inline-flex; align-items: center; gap: 6px; font: 700 11.5px var(--sans); letter-spacing: .06em; color: #141414; background: var(--amber); border: 1px solid var(--amber); border-radius: 999px; padding: 7px 14px; cursor: pointer; white-space: nowrap; }
+.btn:hover { text-decoration: none; background: var(--amber-2); }
+.btn.ghost { background: transparent; color: var(--text-2); border-color: var(--line-2); }
+.btn.ghost:hover { color: var(--text); border-color: var(--amber-line); }
+.btn.copied { background: var(--teal); border-color: var(--teal); color: #0B0D10; }
+
+/* ---------- hero ---------- */
+.hero { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 40px; padding: 34px 0 26px; align-items: start; }
+.eyebrow { font-size: 11.5px; letter-spacing: .26em; text-transform: uppercase; color: var(--amber); font-weight: 700; margin-bottom: 16px; }
+.who { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: center; }
+h1 { font-family: var(--serif); font-weight: 400; font-size: clamp(32px, 4.2vw, 50px); line-height: 1.06; letter-spacing: -.015em; margin: 0; overflow-wrap: anywhere; }
+h1.long { font-size: clamp(28px, 3.2vw, 40px); }
+h1.xlong { font-size: clamp(24px, 2.6vw, 32px); }
+.posn { margin-top: 22px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); }
+.posn b { display: block; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--amber); margin-bottom: 6px; }
+.posn p { margin: 0; font-family: var(--serif); font-size: 16px; line-height: 1.55; color: var(--text); }
+.idline { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px; margin-top: 10px; font-size: 14px; color: var(--text-2); }
+.idline .dim { color: var(--muted); }
+.stats { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 18px; font-size: 13.5px; color: var(--text-2); }
+.stats b { color: var(--text); font-weight: 600; }
+.bio { margin: 12px 0 0; color: var(--muted); font-size: 13.5px; max-width: 62ch; overflow-wrap: anywhere; }
+
+.score { background: linear-gradient(180deg, var(--bg-3), var(--bg-2)); border: 1px solid var(--line-2); border-radius: 18px; padding: 20px 22px 18px; }
+.score-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.score-lbl { font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.big { font-family: var(--serif); font-size: 72px; line-height: .95; margin-top: 6px; }
+.big small { font-size: 18px; color: var(--muted); margin-left: 4px; }
+.grade { display: inline-grid; place-items: center; min-width: 44px; height: 44px; padding: 0 10px; border-radius: 12px; font: 800 22px var(--sans); border: 1px solid; }
+.g-A { color: var(--teal); border-color: var(--teal-line); background: var(--teal-soft); }
+.g-B { color: var(--amber); border-color: var(--amber-line); background: var(--amber-soft); }
+.g-C { color: #E8894A; border-color: rgba(232, 137, 74, .4); background: rgba(232, 137, 74, .1); }
+.g-D, .g-NA { color: var(--red); border-color: var(--red-line); background: var(--red-soft); }
+.verdict { margin: 8px 0 14px; font-family: var(--serif); font-size: 18px; color: var(--text); }
+.bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--bg-4); }
+.bar i { display: block; height: 100%; border-right: 2px solid var(--bg-3); }
+.bar i:last-child { border-right: 0; }
+.cl { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 8px; }
+.cl li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto; gap: 10px; align-items: start; font-size: 13px; }
+.cl .sw { width: 10px; height: 10px; border-radius: 3px; margin-top: 5px; }
+.cl .nm { color: var(--text); font-weight: 600; }
+.cl .nm small { color: var(--faint); font-weight: 500; font-family: var(--mono); font-size: 11px; margin-left: 4px; }
+.cl .help { display: block; color: var(--muted); font-size: 11.5px; line-height: 1.4; margin-top: 1px; }
+.cl .val { font-family: var(--mono); font-size: 12.5px; color: var(--text); text-align: right; white-space: nowrap; }
+.cl .val small { display: block; color: var(--muted); font-size: 10.5px; }
+.caps { margin-top: 12px; font-size: 12px; color: var(--red); border-top: 1px solid var(--line); padding-top: 10px; }
+.caps.none { color: var(--muted); }
+.src { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+
+.kitline { position: relative; margin: 6px 0 0; padding: 22px 26px 20px 30px; border: 1px solid var(--amber-line); border-radius: 16px; background: linear-gradient(120deg, var(--amber-soft), transparent 70%); display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; }
+.kitline::before { content: "\201C"; position: absolute; left: 10px; top: -6px; font: 400 64px/1 var(--serif); color: var(--amber); opacity: .7; }
+.kitline blockquote { margin: 0; font: italic 400 21px/1.45 var(--serif); color: var(--text); }
+.kitline small { display: block; margin-top: 8px; font: 700 10.5px var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--amber); }
+
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); margin-top: 22px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--bg-2), var(--bg)); overflow: hidden; }
+.kpi { padding: 14px 16px; border-right: 1px solid var(--line); min-width: 0; }
+.kpi:last-child { border-right: 0; }
+.kpi b { display: block; font-family: var(--serif); font-weight: 400; font-size: 28px; line-height: 1.1; color: var(--text); }
+.kpi span { display: block; font-size: 10px; letter-spacing: .12em; line-height: 1.35; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+.kpi.ok b { color: var(--teal); }
+.kpi.bad b { color: var(--red); }
+.kpi.accent b { color: var(--amber-2); }
+
+/* ---------- sections ---------- */
+.sec { margin-top: 50px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 18px; }
+.sec-head h2 { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 30px; letter-spacing: -.01em; }
+.sec-head h2 span { font: 700 11.5px var(--sans); letter-spacing: .24em; color: var(--amber); text-transform: uppercase; margin-right: 14px; vertical-align: 6px; }
+.sec-head p { margin: 0; color: var(--muted); font-size: 13px; max-width: 480px; text-align: right; }
+.grid { display: grid; gap: 22px 36px; }
+.g-2 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.blk { min-width: 0; }
+.blk h4 { margin: 0 0 12px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--text-2); font-weight: 700; }
+.blk h4 .sub { display: block; margin-top: 3px; font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--muted); font-weight: 400; }
+.none { color: var(--muted); font-size: 13px; margin: 0; }
+.lead { margin: 0 0 20px; font-family: var(--serif); font-size: 18px; line-height: 1.55; color: var(--text); max-width: 80ch; }
+.lead b { font-family: var(--sans); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--amber); display: block; margin-bottom: 6px; }
+
+.plat { display: inline-block; font: 700 9.5px var(--sans); letter-spacing: .14em; text-transform: uppercase; border-radius: 4px; padding: 2px 6px; border: 1px solid var(--line-2); color: var(--text-2); vertical-align: 1px; }
+.plat-tiktok { border-color: rgba(60, 200, 180, .45); color: var(--teal); }
+.plat-instagram { border-color: rgba(245, 184, 74, .45); color: var(--amber); }
+.verified { display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%; background: var(--teal); color: var(--bg); font-size: 10px; font-weight: 800; }
+.av { position: relative; flex: 0 0 auto; display: inline-grid; place-items: center; border-radius: 50%; overflow: hidden; background: radial-gradient(120% 120% at 20% 10%, #2B3340, #151920); border: 1px solid var(--line-2); color: var(--amber-2); font-family: var(--serif); }
+.av img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.av-sm { width: 36px; height: 36px; font-size: 13px; }
+.av-xl { width: 92px; height: 92px; font-size: 32px; border: 2px solid var(--amber-line); }
+.chips { display: flex; flex-wrap: wrap; gap: 7px; align-items: baseline; }
+.chip { font-size: 12px; border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 11px; color: var(--text-2); background: var(--bg-3); line-height: 1.5; }
+.chip em { font-style: normal; color: var(--muted); font-family: var(--mono); font-size: .78em; margin-left: 4px; }
+.chip.hot { border-color: var(--amber-line); color: var(--amber-2); background: var(--amber-soft); }
+.chip.ok { border-color: var(--teal-line); color: var(--teal); background: var(--teal-soft); }
+.topic { font-family: var(--serif); }
+
+.langs { display: grid; gap: 8px; margin-bottom: 16px; }
+.lang { display: grid; grid-template-columns: 76px minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 12.5px; color: var(--text-2); }
+.lang i { display: block; height: 7px; border-radius: 4px; background: var(--bg-4); overflow: hidden; }
+.lang i b { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), #6FE0CF); border-radius: 4px; }
+.lang span:last-child { text-align: right; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+dl.kv { margin: 0; }
+.kv div { display: flex; justify-content: space-between; gap: 14px; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.kv div:last-child { border-bottom: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; text-align: right; color: var(--text); overflow-wrap: anywhere; min-width: 0; }
+.kv dd small { color: var(--muted); }
+
+/* ---------- fix list + flags ---------- */
+ol.fix { list-style: none; margin: 0; padding: 0; counter-reset: fix; display: grid; gap: 8px; }
+.fix li { counter-increment: fix; position: relative; padding: 12px 14px 12px 50px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); font-size: 14px; color: var(--text); }
+.fix li::before { content: counter(fix); position: absolute; left: 14px; top: 11px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font: 700 11.5px var(--mono); color: var(--amber); border: 1px solid var(--amber-line); background: var(--amber-soft); }
+.flag { border: 1px solid var(--line-2); border-left: 3px solid var(--amber); border-radius: 10px; padding: 11px 13px; margin-bottom: 8px; background: var(--bg-3); }
+.flag.sev-high { border-left-color: var(--red); background: linear-gradient(90deg, var(--red-soft), var(--bg-3) 60%); }
+.flag.sev-low { border-left-color: var(--steel); }
+.flag-top { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 13px; }
+.sev { font: 700 9.5px var(--sans); letter-spacing: .14em; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: var(--amber-soft); color: var(--amber); border: 1px solid var(--amber-line); }
+.sev-high .sev { background: var(--red-soft); color: var(--red); border-color: var(--red-line); }
+.sev-low .sev { color: var(--steel); border-color: var(--line-2); background: transparent; }
+.flag q { display: block; margin-top: 7px; font-family: var(--serif); font-size: 15px; color: var(--text); overflow-wrap: anywhere; }
+.flag-meta { margin-top: 6px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.clean { display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--teal-line); background: var(--teal-soft); border-radius: 12px; padding: 14px 16px; }
+.clean .tick { flex: 0 0 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--teal); color: var(--bg); font-weight: 900; font-size: 15px; }
+.clean b { display: block; color: var(--teal); font-size: 15px; }
+.clean small { display: block; color: var(--text-2); font-size: 12.5px; margin-top: 3px; }
+ul.notes { list-style: none; margin: 12px 0 0; padding: 0; }
+.notes li { font-size: 13px; color: var(--text-2); padding: 8px 10px; margin-bottom: 6px; border-radius: 8px; border: 1px solid var(--amber-line); background: var(--amber-soft); }
+
+/* ---------- hooks ---------- */
+ol.hooks { list-style: none; margin: 0; padding: 0; counter-reset: hook; display: grid; gap: 0; }
+.hooks li { counter-increment: hook; display: grid; grid-template-columns: 34px minmax(0, 1fr) 150px; gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px dashed var(--line-2); }
+.hooks li:last-child { border-bottom: 0; }
+.hooks li::before { content: counter(hook, decimal-leading-zero); font: 400 22px var(--serif); color: var(--amber); }
+.hooks q { font-family: var(--serif); font-size: 17px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; }
+.hooks .hm { text-align: right; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.hooks .hm b { display: block; font: 400 24px var(--serif); color: var(--text); }
+
+/* ---------- market ---------- */
+.receipt-note { display: flex; gap: 10px; align-items: center; margin: 0 0 14px; font-size: 13px; color: var(--text-2); }
+.receipt-note .stamp { font: 700 10px var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--teal); border: 1px solid var(--teal-line); background: var(--teal-soft); border-radius: 4px; padding: 3px 7px; white-space: nowrap; }
+.table-wrap { overflow-x: auto; }
+table.mk { width: 100%; border-collapse: collapse; min-width: 760px; }
+.mk th { text-align: left; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 10px 10px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+.mk td { padding: 16px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.mk .r { text-align: right; }
+.mk .brand { font: 400 22px/1.2 var(--serif); color: var(--text); text-transform: capitalize; }
+.mk .brand small { display: block; margin-top: 6px; font: 600 10.5px var(--sans); letter-spacing: .08em; text-transform: none; color: var(--teal); }
+.mk .n { font: 400 22px var(--serif); }
+.rcpt { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-2); margin-bottom: 8px; }
+.rcpt:last-child { margin-bottom: 0; }
+.rcpt .thumb { width: 44px; border-radius: 7px; }
+.rcpt-top { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 13px; }
+.rcpt-top a.h { font-weight: 600; color: var(--text); }
+.rcpt-cap { margin-top: 4px; font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.rcpt-meta { margin-top: 5px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.rcpt-meta a { font-family: var(--sans); font-weight: 600; font-size: 11.5px; margin-left: 6px; }
+
+/* ---------- pitches ---------- */
+.pitches { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.pitch { border: 1px solid var(--line-2); border-radius: 18px; background: var(--bg-2); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; break-inside: avoid; }
+.pitch-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pitch-no { font: 700 10.5px var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--amber); }
+.pitch h3 { margin: 4px 0 0; font: 400 28px/1.1 var(--serif); text-transform: capitalize; }
+.pitch .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.pitch dl { margin: 0; display: grid; gap: 10px; }
+.pitch dt { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin-bottom: 3px; }
+.pitch dd { margin: 0; font-size: 13.5px; color: var(--text-2); }
+.mail { border: 1px solid var(--line); border-radius: 12px; background: var(--bg); overflow: hidden; }
+.mail .subj { padding: 10px 14px; border-bottom: 1px solid var(--line); font-size: 13.5px; color: var(--text); }
+.mail .subj span { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-right: 8px; letter-spacing: .06em; }
+.mail .body { padding: 12px 14px; font-family: var(--serif); font-size: 15px; line-height: 1.55; color: var(--text); }
+.rate { margin-top: 16px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; border: 1px solid var(--line-2); border-radius: 14px; padding: 14px 18px; background: var(--bg-2); font-size: 13.5px; color: var(--text-2); }
+.rate b { font: 700 10.5px var(--sans); letter-spacing: .18em; text-transform: uppercase; color: var(--amber); padding-top: 2px; white-space: nowrap; }
+
+/* ---------- compare ---------- */
+.bench { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.bm { border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); padding: 16px 18px; }
+.bm b { display: block; font: 400 40px/1 var(--serif); color: var(--text); }
+.bm b sup { font-size: 16px; color: var(--muted); margin-left: 2px; }
+.bm span { display: block; margin-top: 8px; font-size: 12.5px; color: var(--text-2); }
+.bm small { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.bm.hi b { color: var(--teal); }
+.bm.lo b { color: #E8894A; }
+.widened { margin-top: 12px; font-size: 12.5px; color: var(--amber-2); border: 1px dashed var(--amber-line); border-radius: 10px; padding: 9px 12px; }
+.how-found { margin-top: 12px; font-size: 12.5px; color: var(--muted); }
+.how-found code { font-family: var(--mono); font-size: 11px; color: var(--text-2); }
+ul.peers { list-style: none; margin: 0; padding: 0; }
+.peers li { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.peers li:last-child { border-bottom: 0; }
+.peers .ph { font-weight: 600; font-size: 13.5px; color: var(--text); overflow-wrap: anywhere; }
+.peers .pm { display: block; font-size: 11.5px; color: var(--muted); }
+.peers .pv { text-align: right; font-family: var(--mono); font-size: 12px; color: var(--text); white-space: nowrap; }
+.peers .pv small { display: block; color: var(--muted); font-size: 10.5px; }
+
+/* ---------- evidence ---------- */
+.thumb { position: relative; display: block; aspect-ratio: 9 / 16; border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); background: linear-gradient(160deg, #232A35 0%, #161A21 55%, #1D1A14 100%); }
+.thumb::after { content: ""; position: absolute; left: 50%; top: 50%; margin: -8px 0 0 -4px; border-style: solid; border-width: 8px 0 8px 12px; border-color: transparent transparent transparent rgba(237, 234, 228, .22); }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.thumb .ov { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 14px 6px 5px; background: linear-gradient(transparent, rgba(0, 0, 0, .78)); font-family: var(--mono); font-size: 10.5px; color: #fff; text-align: center; }
+.ev-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.ev { margin: 0; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 16px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-3); break-inside: avoid; }
+.ev > a { display: block; }
+.ev-used { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+.ev-used span { font: 700 9px var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--teal); border: 1px solid var(--teal-line); border-radius: 4px; padding: 1px 6px; }
+.ev-cap { font-size: 13px; color: var(--text-2); overflow-wrap: anywhere; }
+.ev blockquote { margin: 8px 0 0; padding-left: 12px; border-left: 2px solid var(--amber-line); font-family: var(--serif); font-size: 15px; line-height: 1.5; color: var(--text); overflow-wrap: anywhere; }
+.ev-frames { display: flex; gap: 6px; margin-top: 10px; }
+.kf { display: block; width: 46px; color: var(--muted); }
+.kf:hover { text-decoration: none; }
+.kf .thumb { border-radius: 6px; }
+.kf .thumb::after { display: none; }
+.kf .t { display: block; text-align: center; font-family: var(--mono); font-size: 10px; margin-top: 3px; color: var(--amber-2); }
+.ev-meta { margin-top: 9px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.ev-audio { margin-top: 5px; font-size: 12px; color: var(--text-2); }
+.ev-audio .copy { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--red-line); color: var(--red); font-size: 10px; margin-left: 4px; }
+
+ul.comments { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.comments li { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--bg-2); }
+.comments q { display: block; font-family: var(--serif); font-size: 17px; line-height: 1.45; color: var(--text); overflow-wrap: anywhere; }
+.comments span { display: block; margin-top: 8px; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+
+/* ---------- states ---------- */
+.state { margin: 40px 0; border: 1px solid var(--line-2); border-radius: 18px; padding: 28px 30px; background: var(--bg-2); }
+.state h2 { margin: 0 0 8px; font: 400 30px var(--serif); }
+.state p { margin: 0; color: var(--text-2); }
+.state.err { border-color: var(--red-line); background: linear-gradient(120deg, var(--red-soft), var(--bg-2) 60%); }
+
+/* ---------- footer ---------- */
+.foot { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line-2); color: var(--text-2); font-size: 13px; }
+.method { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 0; font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-bottom: 22px; }
+.method > span { padding: 0 12px; border-left: 1px solid var(--line-2); }
+.method > span:first-child { padding-left: 0; border-left: 0; }
+.method b { color: var(--text-2); font-weight: 600; }
+.foot-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 32px; }
+.foot h4 { margin: 0 0 10px; font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--amber); }
+.foot ul { margin: 0; padding: 0; list-style: none; }
+.foot li { padding: 6px 0; border-bottom: 1px solid var(--line); }
+.foot li:last-child { border-bottom: 0; }
+.foot li b { color: var(--text); font-family: var(--mono); font-weight: 600; }
+.foot p { margin: 0 0 8px; }
+.receipts-line { margin-top: 26px; padding: 14px 18px; border: 1px solid var(--amber-line); border-radius: 12px; background: var(--amber-soft); color: var(--text); font-size: 14px; display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center; }
+.receipts-line b { font-family: var(--serif); font-weight: 400; font-size: 17px; }
+.colophon { margin-top: 20px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; color: var(--faint); }
+
+/* ---------- responsive ---------- */
+@media (max-width: 1020px) {
+  .hero { grid-template-columns: 1fr; gap: 24px; }
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kpi:nth-child(3n) { border-right: 0; }
+  .kpi:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+  .g-2, .foot-grid { grid-template-columns: 1fr; }
+  .ev-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .wrap { padding: 18px 16px 48px; }
+  .topbar { flex-direction: column; align-items: flex-start; }
+  .topmeta { justify-content: flex-start; }
+  .who { grid-template-columns: 1fr; gap: 12px; }
+  .big { font-size: 58px; }
+  .kitline { grid-template-columns: 1fr; padding: 20px 18px 18px 24px; }
+  .kitline blockquote { font-size: 18px; }
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kpi { border-bottom: 1px solid var(--line); }
+  .kpi:nth-child(3n) { border-right: 1px solid var(--line); }
+  .kpi:nth-child(2n) { border-right: 0; }
+  .sec-head { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .sec-head p { text-align: left; }
+  .hooks li { grid-template-columns: 28px minmax(0, 1fr); }
+  .hooks .hm { grid-column: 2; text-align: left; }
+  .hooks .hm b { display: inline; font-size: 18px; margin-right: 6px; }
+  .bench { grid-template-columns: 1fr; }
+  .ev { grid-template-columns: 76px minmax(0, 1fr); }
+  .pitches { grid-template-columns: 1fr; }
+}
+
+/* ---------- print: light editorial theme ---------- */
+@page { size: A4; margin: 12mm 11mm 14mm; }
+@media print {
+  :root {
+    --bg: #FFFFFF; --bg-2: #FFFFFF; --bg-3: #F7F5F0; --bg-4: #ECE8DF;
+    --line: #E3DED4; --line-2: #D3CDC1;
+    --text: #15171B; --text-2: #3B4049; --muted: #6A707B; --faint: #9AA0A9;
+    --amber: #B7791F; --amber-2: #9A6412; --amber-soft: rgba(183, 121, 31, .08); --amber-line: rgba(183, 121, 31, .45);
+    --teal: #1D8C7C; --teal-soft: rgba(29, 140, 124, .08); --teal-line: rgba(29, 140, 124, .45);
+    --red: #C23B3B; --red-soft: rgba(194, 59, 59, .07); --red-line: rgba(194, 59, 59, .45);
+    --steel: #56709A; --sand: #B59D78;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { background: #fff; font-size: 10.5pt; }
+  .wrap { max-width: none; padding: 0; }
+  .noprint { display: none !important; }
+  a { color: inherit; }
+  .hero { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; padding-top: 18px; }
+  .kpis { grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--bg-3); }
+  .kpi { border-bottom: 0 !important; border-right: 1px solid var(--line) !important; }
+  .kpi:last-child { border-right: 0 !important; }
+  .g-2 { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+  .ev-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sec { margin-top: 26px; }
+  .sec-head { break-after: avoid; }
+  .table-wrap { overflow: visible; }
+  table.mk { min-width: 0; }
+  .mk tr, .rcpt, .pitch, .ev, .flag, .fix li, .hooks li, .comments li, .bm, .peers li, .kitline, .score { break-inside: avoid; }
+  .pitches { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .foot { break-before: page; }
+  .av { background: var(--bg-4); }
+  .thumb { background: linear-gradient(160deg, #E9E5DC, #D9D3C7); }
+  .thumb::after { border-color: transparent transparent transparent rgba(0, 0, 0, .18); }
+  .mail, .score { background: #fff; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="topbar">
+  <a class="wordmark" href="/" title="Castable home"><span class="mk" aria-hidden="true">C</span><span><b>Castable</b><small>Get cast. With receipts.</small></span></a>
+  <div class="topmeta">
+    <span class="mode mode-{{ mode|lower }}" title="Data source for this report">{{ mode|upper }}</span>
+    {%- if r.generated %}<span>{{ r.generated|date('%d %b %Y · %H:%M UTC') }}</span>{% endif %}
+    <button class="btn ghost noprint" type="button" onclick="window.print()">Save as PDF</button>
+    <a class="btn noprint" href="/">Check another handle</a>
+  </div>
+</header>
+
+{%- if run.status in ['queued', 'running'] %}
+<section class="state">
+  <h2>Still reading {% if handle %}@{{ handle }}{% else %}your videos{% endif %}…</h2>
+  <p>Your Brand-Readiness Report is being written. This page refreshes on its own.</p>
+</section>
+{%- elif run.status == 'error' or r.error or not r.profile %}
+<section class="state err">
+  <h2>We couldn't finish {% if handle %}@{{ handle }}{% else %}this report{% endif %}</h2>
+  <p>{{ r.error or run.error or 'This run has no report yet.' }}</p>
+  <p style="margin-top:12px"><a class="btn noprint" href="/">Try another handle</a></p>
+</section>
+{%- else %}
+
+{#- ================= HERO ================= #}
+<section class="hero">
+  <div>
+    <div class="eyebrow">Brand-Readiness Report</div>
+    <div class="who">
+      {{ avatar(p.profilePictureUrl, p.displayName or handle, 'xl') }}
+      <div>
+        <h1 dir="ltr" class="{{ 'xlong' if handle|length > 24 else ('long' if handle|length > 15 else '') }}"><a href="{{ profile_url(platform, handle) }}" target="_blank" rel="noopener" style="color:inherit">@{% for part in handle.split('.') %}{{ part }}{% if not loop.last %}.<wbr>{% endif %}{% endfor %}</a></h1>
+        <div class="idline">
+          {%- if platform %}<span class="plat plat-{{ platform }}">{{ PLAT.get(platform, platform) }}</span>{% endif %}
+          {%- if p.isVerified %}<span class="verified" title="Verified">✓</span>{% endif %}
+          {%- if p.displayName %}<span dir="auto">{{ p.displayName }}</span>{% endif %}
+          {%- if p.locationCompleteAddress %}<span class="dim">· {{ p.locationCompleteAddress }}</span>{% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="stats">
+      <span><b>{{ p.followersCount|int }}</b> followers</span>
+      {%- if p.postsCount is number %}<span><b>{{ p.postsCount|int }}</b> posts</span>{% endif %}
+      {%- if p.publicEmail %}<span><a href="mailto:{{ p.publicEmail }}">{{ p.publicEmail }}</a></span>{% endif %}
+      {%- if href(p.bioLink) %}<span><a href="{{ p.bioLink }}" target="_blank" rel="noopener">{{ (p.bioLink|string).replace('https://', '').replace('http://', '') }}</a></span>{% endif %}
+    </div>
+    {%- if p.bio %}<p class="bio" dir="auto">{{ p.bio|tags }}</p>{% endif %}
+    {%- if plan.niche or plan.positioning %}
+    <div class="posn"><b>{% if plan.niche %}Your niche · {{ plan.niche }}{% else %}Your positioning{% endif %}</b>{% if plan.positioning %}<p dir="auto">{{ plan.positioning }}</p>{% endif %}</div>
+    {%- endif %}
+  </div>
+
+  <aside class="score" aria-label="Readiness score">
+    {%- set comps = s.components or {} -%}
+    {%- set w = s.weights or {'consistency': 0.2, 'engagement': 0.3, 'safety': 0.3, 'market_fit': 0.2} -%}
+    <div class="score-top">
+      <div>
+        <div class="score-lbl">Readiness score</div>
+        <div class="big">{% if s.total is number %}{{ s.total }}{% else %}–{% endif %}<small>/100</small></div>
+      </div>
+      <span class="grade g-{{ s.grade or 'NA' }}" title="A ≥ 80 · B ≥ 65 · C ≥ 50 · D below">{{ s.grade or '–' }}</span>
+    </div>
+    <p class="verdict">{{ VERDICT.get(s.grade, 'Scored on four transparent parts.') }}</p>
+    <div class="bar" role="img" aria-label="Score breakdown">
+      {%- for k in COMPS -%}
+        {%- set val = comps.get(k) -%}
+        {%- if val is number and w.get(k) is number -%}
+        <i style="width: {{ '%.2f'|format(val * w.get(k)) }}%; background: var(--c-{{ k }})" title="{{ CLABEL[k] }} {{ val }} × {{ w.get(k) }} = {{ '%.1f'|format(val * w.get(k)) }} pts"></i>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+    <ul class="cl">
+      {%- for k in COMPS %}
+      {%- set val = comps.get(k) %}
+      <li>
+        <i class="sw" style="background: var(--c-{{ k }})"></i>
+        <span><span class="nm">{{ CLABEL[k] }}<small>{% if w.get(k) is number %}{{ '%.0f'|format(w.get(k) * 100) }}%{% endif %}</small></span><span class="help">{{ CHELP[k] }}</span></span>
+        <span class="val">{% if val is number %}{{ '%.0f'|format(val) }}<small>{% if w.get(k) is number %}+{{ '%.1f'|format(val * w.get(k)) }} pts{% endif %}</small>{% else %}–{% endif %}</span>
+      </li>
+      {%- endfor %}
+    </ul>
+    {%- if s.caps %}
+    <div class="caps">Capped: {{ s.caps|join('; ') }}</div>
+    {%- else %}
+    <div class="caps none">No caps applied: nothing in your videos pulls the score down.</div>
+    {%- endif %}
+    <div class="src">Plan written by {{ r.plan_source or 'deterministic rules' }}{% if r.videos_checked %} · from {{ r.videos_checked }} videos{% endif %}</div>
+  </aside>
+</section>
+
+{%- if plan.media_kit_line %}
+<section class="kitline">
+  <div>
+    <blockquote dir="auto">{{ plan.media_kit_line }}</blockquote>
+    <small>Your media-kit line, backed by the numbers below</small>
+  </div>
+  <button class="btn ghost noprint" type="button" data-copy="{{ plan.media_kit_line }}">Copy line</button>
+</section>
+{%- endif %}
+
+<section class="kpis" aria-label="Key numbers">
+  <div class="kpi"><b>{{ r.videos_checked if r.videos_checked is number else '–' }}</b><span>videos read</span></div>
+  <div class="kpi accent"><b>{{ a.er_views_median|pct(2) }}</b><span>engagement per view</span></div>
+  <div class="kpi {% if bench.er_percentile is number and bench.er_percentile >= 50 %}ok{% endif %}"><b>{{ ordinal(bench.er_percentile) }}</b><span>percentile vs peers</span></div>
+  <div class="kpi"><b>{{ market|length }}</b><span>brands buying near you</span></div>
+  <div class="kpi {% if flags %}bad{% else %}ok{% endif %}"><b>{{ flags|length }}</b><span>safety flags</span></div>
+  <div class="kpi"><b>{{ a.cadence_per_week|num(1) if a.cadence_per_week is number else '–' }}</b><span>posts per week</span></div>
+</section>
+
+{#- ================= 01 WHAT YOU MAKE ================= #}
+<section class="sec" id="make">
+  <div class="sec-head"><h2><span>01</span>What you actually make</h2><p>Read from the transcripts, captions and hashtags of your last {{ r.videos_checked or 'recent' }} videos, not from your bio.</p></div>
+  <div class="grid g-2">
+    <div class="blk">
+      <h4>Topics on camera<span class="sub">Bigger = in more of your videos</span></h4>
+      {%- set vids = [] -%}
+      {%- for t in topics -%}{%- if t is mapping and t.videos is number -%}{%- set _ = vids.append(t.videos) -%}{%- endif -%}{%- endfor -%}
+      {%- set maxv = (vids|max) if vids else 1 -%}
+      {%- if topics %}
+      <div class="chips">
+        {%- for t in topics[:24] %}
+        {%- set term = t.term if t is mapping else t -%}
+        {%- set n = t.videos if (t is mapping and t.videos is number) else 0 -%}
+        <span class="chip topic{% if n and n >= maxv * 0.6 %} hot{% endif %}" style="font-size: {{ '%.1f'|format(12 + 11 * (n / maxv if maxv else 0)) }}px" title="{% if n %}in {{ n }} of {{ r.videos_checked or '?' }} videos{% endif %}" dir="auto">{{ term }}{% if n %}<em>{{ n }}</em>{% endif %}</span>
+        {%- endfor %}
+      </div>
+      {%- else %}<p class="none">Not enough transcript or caption text to extract topics.</p>{% endif %}
+      {%- if a.sponsored_partners %}
+      <h4 style="margin-top:22px">Brands you've already worked with<span class="sub">Detected from #ad / sponsored posts in your videos</span></h4>
+      <div class="chips">{% for it in a.sponsored_partners %}<span class="chip ok">{{ pair_name(it) }}{% if pair_count(it) %}<em>×{{ pair_count(it) }}</em>{% endif %}</span>{% endfor %}</div>
+      {%- endif %}
+    </div>
+    <div class="blk">
+      <h4>Languages &amp; rhythm</h4>
+      {%- set lm = a.language_mix or {} -%}
+      {%- set ltot = namespace(v=0) -%}
+      {%- for k, v in lm.items() -%}{%- if v is number -%}{%- set ltot.v = ltot.v + v -%}{%- endif -%}{%- endfor -%}
+      {%- if lm and ltot.v %}
+      <div class="langs">
+        {%- set lpairs = [] -%}
+        {%- for code, n in lm.items() -%}{%- if n is number -%}{%- set _ = lpairs.append((code, n)) -%}{%- endif -%}{%- endfor -%}
+        {%- for code, n in lpairs|sort(attribute='1', reverse=true) %}
+        <div class="lang"><span>{{ LANG.get(code, code) }}</span><i><b style="width: {{ '%.1f'|format(100 * n / ltot.v) }}%"></b></i><span>{{ n }} video{{ '' if n == 1 else 's' }}</span></div>
+        {%- endfor %}
+      </div>
+      {%- endif %}
+      <dl class="kv">
+        <div><dt>Posts per week</dt><dd>{{ a.cadence_per_week|num(2) if a.cadence_per_week is number else '–' }}</dd></div>
+        <div><dt>Last post</dt><dd>{% if a.last_post_days_ago is number %}{{ a.last_post_days_ago|round|int }} day{{ '' if a.last_post_days_ago == 1 else 's' }} ago{% else %}–{% endif %}</dd></div>
+        <div><dt>Sponsored posts</dt><dd>{{ a.sponsored_posts if a.sponsored_posts is number else '–' }}{% if r.videos_checked %} <small>of {{ r.videos_checked }}</small>{% endif %}</dd></div>
+        <div><dt>Views per follower</dt><dd>{{ a.views_per_follower_median|num(2) }}×</dd></div>
+        <div><dt>Comments per like</dt><dd>{{ a.comment_like_ratio_median|pct }}</dd></div>
+        <div><dt>Copyrighted audio</dt><dd>{{ a.audio_copyrighted_share|pct(0) }} <small>of videos</small></dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+{#- ================= 02 FIX ================= #}
+<section class="sec" id="fix">
+  <div class="sec-head"><h2><span>02</span>Fix before you pitch</h2><p>A brand manager will check the same things. Quotes and timestamps come straight from your transcripts.</p></div>
+  <div class="grid g-2">
+    <div class="blk">
+      <h4>Your to-do list</h4>
+      {%- if fixes %}
+      <ol class="fix">{% for f in fixes %}<li dir="auto">{{ f }}</li>{% endfor %}</ol>
+      {%- else %}
+      <div class="clean"><span class="tick">✓</span><div><b>Nothing to fix first</b><small>You can start pitching today.</small></div></div>
+      {%- endif %}
+    </div>
+    <div class="blk">
+      <h4>Brand-safety self-audit<span class="sub">{{ a.videos_checked or r.videos_checked or 'Recent' }} videos{% if a.window_days %} · last {{ a.window_days }} days{% endif %} · transcripts and captions</span></h4>
+      {%- if flags %}
+        {%- for f in flags %}
+        <div class="flag sev-{{ f.severity or 'medium' }}">
+          <div class="flag-top"><span class="sev">{{ f.severity or 'flag' }}</span><b>{{ FLAG.get(f.type, f.type) }}</b>{% if f.term %}<span class="chip">{{ f.term }}</span>{% endif %}</div>
+          {%- if f.quote %}<q dir="auto">{{ f.quote }}</q>{% endif %}
+          <div class="flag-meta">{% if f.t is number %}at {{ f.t|ts }} · {% endif %}{% if f.published %}{{ f.published|date }} · {% endif %}{% if href(f.link) %}<a href="{{ f.link }}" target="_blank" rel="noopener">watch the moment ↗</a>{% endif %}</div>
+        </div>
+        {%- endfor %}
+      {%- else %}
+      <div class="clean"><span class="tick">✓</span><div><b>No brand-safety flags</b><small>No competitor call-outs, risky topics or profanity found in {{ a.videos_checked or r.videos_checked or 'your recent' }} videos.</small></div></div>
+      {%- endif %}
+      {%- if a.authenticity_notes %}
+      <ul class="notes">{% for n in a.authenticity_notes %}<li dir="auto">{{ n }}</li>{% endfor %}</ul>
+      {%- endif %}
+    </div>
+  </div>
+</section>
+
+{#- ================= 03 HOOKS ================= #}
+<section class="sec" id="hooks">
+  <div class="sec-head"><h2><span>03</span>Your hooks that worked</h2><p>The first words of your best-performing videos, verbatim from the transcript. Lead your sponsored videos with these patterns.</p></div>
+  {%- if hooks %}
+  <ol class="hooks">
+    {%- for h in hooks %}
+    <li>
+      <q dir="auto">{{ h.hook }}</q>
+      <span class="hm"><b>{{ h.views|compact }}</b>views{% if h.er is number %} · ER {{ h.er|pct }}{% endif %}{% if href(h.link) %} · <a href="{{ h.link }}" target="_blank" rel="noopener">watch ↗</a>{% endif %}</span>
+    </li>
+    {%- endfor %}
+  </ol>
+  {%- else %}<p class="none">No spoken hooks found in your recent transcripts.</p>{% endif %}
+</section>
+
+{#- ================= 04 MARKET ================= #}
+<section class="sec" id="market">
+  <div class="sec-head"><h2><span>04</span>Brands buying from creators like you</h2><p>Brands that paid creators Oriane's index places next to you. Each receipt is a real sponsored post you can open.</p></div>
+  {%- if market %}
+  <p class="receipt-note"><span class="stamp">Receipts</span>Found in #ad / sponsored posts from {{ (r.peer_sponsor_summary or {})|length or peers|length }} creator{{ '' if ((r.peer_sponsor_summary or {})|length or peers|length) == 1 else 's' }} next to you. Pitch the brands that already spend in your lane.</p>
+  <div class="table-wrap">
+  <table class="mk">
+    <thead><tr><th>Brand</th><th class="r">Creators</th><th class="r">Sponsored posts</th><th>Receipts</th></tr></thead>
+    <tbody>
+    {%- set my_partners = [] -%}
+    {%- for it in a.sponsored_partners or [] -%}{%- set _ = my_partners.append((pair_name(it)|string)|lower) -%}{%- endfor -%}
+    {%- for m in market %}
+      <tr>
+        <td class="brand">{{ m.brand }}{% if (m.brand|string|lower) in my_partners %}<small>✓ already sponsored you</small>{% endif %}</td>
+        <td class="r n">{{ m.creators if m.creators is number else '–' }}</td>
+        <td class="r n">{{ m.sponsored_posts if m.sponsored_posts is number else '–' }}</td>
+        <td>
+          {%- for rc in (m.receipts or [])[:3] %}
+          <div class="rcpt">
+            {%- if href(rc.link) %}<a href="{{ rc.link }}" target="_blank" rel="noopener" aria-label="Open sponsored post">{{ thumb(rc.thumbnail, '') }}</a>{% else %}{{ thumb(rc.thumbnail, '') }}{% endif %}
+            <div>
+              <div class="rcpt-top"><a class="h" href="{{ profile_url(rc.platform, rc.handle) }}" target="_blank" rel="noopener">@{{ rc.handle }}</a>{% if rc.platform %}<span class="plat plat-{{ rc.platform }}">{{ PLAT.get(rc.platform, rc.platform) }}</span>{% endif %}{% if rc.followers is number %}<span style="color:var(--muted)">{{ rc.followers|compact }} followers</span>{% endif %}</div>
+              {%- if rc.caption %}<div class="rcpt-cap" dir="auto">{{ rc.caption|tags }}</div>{% endif %}
+              <div class="rcpt-meta">{% if rc.published %}{{ rc.published|date }}{% endif %}{% if rc.views is number %} · {{ rc.views|compact }} views{% endif %}{% if rc.er_views is number %} · ER {{ rc.er_views|pct }}{% endif %}{% if href(rc.link) %}<a href="{{ rc.link }}" target="_blank" rel="noopener">View sponsored post ↗</a>{% endif %}</div>
+            </div>
+          </div>
+          {%- else %}<span class="none">No receipt kept.</span>
+          {%- endfor %}
+        </td>
+      </tr>
+    {%- endfor %}
+    </tbody>
+  </table>
+  </div>
+  {%- else %}
+  <p class="none">No sponsored posts found among the creators next to you yet. That is a gap you can own: pitch the brands you already use on camera.</p>
+  {%- endif %}
+</section>
+
+{#- ================= 05 PITCHES ================= #}
+<section class="sec" id="pitches">
+  <div class="sec-head"><h2><span>05</span>Your pitches</h2><p>Ready-to-send openers built from your numbers and the receipts above. Copy, personalise one line, send.</p></div>
+  {%- if pitches %}
+  <div class="pitches">
+    {%- set my_partners2 = [] -%}
+    {%- for it in a.sponsored_partners or [] -%}{%- set _ = my_partners2.append((pair_name(it)|string)|lower) -%}{%- endfor -%}
+    {%- set mk_by = {} -%}
+    {%- for m in market -%}{%- set _ = mk_by.update({(m.brand|string|lower): m}) -%}{%- endfor -%}
+    {%- for pc in pitches %}
+    {%- set bkey = (pc.brand|string|lower) -%}
+    <article class="pitch">
+      <div class="pitch-head">
+        <div><div class="pitch-no">Pitch {{ '%02d'|format(loop.index) }}</div><h3 dir="auto">{{ pc.brand }}</h3></div>
+        <button class="btn noprint" type="button" data-copy="Subject: {{ pc.subject_line or '' }}&#10;&#10;{{ pc.opener or '' }}">Copy email</button>
+      </div>
+      {%- if bkey in mk_by or bkey in my_partners2 %}
+      <div class="tags">
+        {%- if bkey in my_partners2 %}<span class="chip ok">✓ sponsored you before</span>{% endif %}
+        {%- if bkey in mk_by %}<span class="chip hot">{{ mk_by[bkey].sponsored_posts }} sponsored post{{ '' if mk_by[bkey].sponsored_posts == 1 else 's' }} next to you</span>{% endif %}
+      </div>
+      {%- endif %}
+      <dl>
+        {%- if pc.why_fit %}<div><dt>Why you fit</dt><dd dir="auto">{{ pc.why_fit }}</dd></div>{% endif %}
+        {%- if pc.angle %}<div><dt>The angle</dt><dd dir="auto">{{ pc.angle }}</dd></div>{% endif %}
+      </dl>
+      <div class="mail">
+        <div class="subj" dir="auto"><span>SUBJECT</span>{{ pc.subject_line or '–' }}</div>
+        <div class="body" dir="auto">{{ pc.opener or '' }}</div>
+      </div>
+    </article>
+    {%- endfor %}
+  </div>
+  {%- else %}
+  <p class="none">No pitches yet: once brands show up next to you, Castable writes one per brand.</p>
+  {%- endif %}
+  {%- if plan.rate_hint %}
+  <div class="rate"><b>How to price</b><span dir="auto">{{ plan.rate_hint }}</span></div>
+  {%- endif %}
+</section>
+
+{#- ================= 06 COMPARE ================= #}
+<section class="sec" id="compare">
+  <div class="sec-head"><h2><span>06</span>How you compare</h2><p>Peers are the creators Oriane's index puts next to you by what they say and show on camera, not by hashtags you pick.</p></div>
+  <div class="grid g-2">
+    <div class="blk">
+      <div class="bench">
+        <div class="bm {% if bench.er_percentile is number %}{{ 'hi' if bench.er_percentile >= 50 else 'lo' }}{% endif %}"><b>{{ ordinal(bench.er_percentile) }}<sup>pct</sup></b><span>Engagement per view vs peers</span><small>you {{ (bench.er_views_median if bench.er_views_median is number else a.er_views_median)|pct }} · peer median {{ bench.peer_er_median|pct }}</small></div>
+        <div class="bm {% if bench.views_per_follower_percentile is number %}{{ 'hi' if bench.views_per_follower_percentile >= 50 else 'lo' }}{% endif %}"><b>{{ ordinal(bench.views_per_follower_percentile) }}<sup>pct</sup></b><span>Views per follower vs peers</span><small>you {{ (bench.views_per_follower_median if bench.views_per_follower_median is number else a.views_per_follower_median)|num(2) }}× your follower count</small></div>
+        <div class="bm"><b>{{ bench.peers if bench.peers is number else peers|length }}</b><span>Creators in your peer set</span><small>{% if disc.videos is number %}from {{ disc.videos }} matching videos{% endif %}</small></div>
+        <div class="bm"><b>{{ a.er_followers_median|pct }}</b><span>Engagement per follower</span><small>median over your recent videos</small></div>
+      </div>
+      {%- if r.peers_widened %}
+      <div class="widened">No peers in your follower band and area, so we widened the search to any size and any region. Treat these comparisons as directional.</div>
+      {%- endif %}
+      <p class="how-found">Found by {% if disc.visual_asset %}visual similarity to your own keyframes (<code>{{ disc.visual_asset }}</code>) plus {% endif %}semantic search over transcripts and captions.</p>
+    </div>
+    <div class="blk">
+      <h4>Creators next to you<span class="sub">Top {{ [peers|length, 6]|min }} by match</span></h4>
+      {%- if peers %}
+      <ul class="peers">
+        {%- for c in peers[:6] %}
+        <li>
+          {{ avatar(c.profilePictureUrl, c.displayName or c.handle, 'sm') }}
+          <span><a class="ph" href="{{ profile_url(c.platform, c.handle) }}" target="_blank" rel="noopener">@{{ c.handle }}</a><span class="pm">{% if c.platform %}{{ PLAT.get(c.platform, c.platform) }} · {% endif %}{{ c.followers|compact }} followers{% if c.matching_videos %} · {{ c.matching_videos }} matching video{{ '' if c.matching_videos == 1 else 's' }}{% endif %}{% if c.visual_best_rank %} · visual match #{{ c.visual_best_rank }}{% endif %}</span></span>
+          <span class="pv">{{ c.er_views_mean|pct }}<small>ER / view</small></span>
+        </li>
+        {%- endfor %}
+      </ul>
+      {%- else %}<p class="none">No peers found in the index for this niche yet.</p>{% endif %}
+    </div>
+  </div>
+</section>
+
+{#- ================= 07 EVIDENCE ================= #}
+<section class="sec" id="evidence">
+  <div class="sec-head"><h2><span>07</span>Evidence</h2><p>The videos behind every number: transcript excerpts, keyframes with timestamps, audio rights. Click any frame to open the video.</p></div>
+  {%- if evidence %}
+  <div class="ev-grid">
+    {%- for e in evidence %}
+    {%- set elink = href(e.link) or profile_url(e.platform or platform, handle) -%}
+    <figure class="ev">
+      <a href="{{ elink }}" target="_blank" rel="noopener" aria-label="Open video">{{ thumb(e.thumbnail, (e.views|compact ~ ' views') if e.views is number else '') }}</a>
+      <div>
+        <div class="ev-used">{% if e.transcript_excerpt %}<span>Transcript</span>{% endif %}{% if e.frames %}<span>Keyframes ×{{ e.frames|length }}</span>{% endif %}{% if e.audio %}<span>Audio</span>{% endif %}{% if e.comments is number %}<span>Comments</span>{% endif %}</div>
+        {%- if e.caption %}<div class="ev-cap" dir="auto">{{ e.caption|tags }}</div>{% endif %}
+        {%- if e.transcript_excerpt %}<blockquote dir="auto">{{ e.transcript_excerpt }}</blockquote>{% endif %}
+        {%- if e.frames %}
+        <div class="ev-frames">
+          {%- for fr in e.frames[:5] %}<a class="kf" href="{{ elink }}" target="_blank" rel="noopener" title="Keyframe at {{ fr.t|ts }}">{{ thumb(fr.url, '') }}<span class="t">{{ fr.t|ts }}</span></a>{% endfor %}
+        </div>
+        {%- endif %}
+        <div class="ev-meta">{% if e.published %}{{ e.published|date }} · {% endif %}{% if e.views is number %}{{ e.views|compact }} views · {% endif %}{% if e.er_views is number %}ER {{ e.er_views|pct }} · {% endif %}{% if e.likes is number %}{{ e.likes|compact }} likes · {% endif %}{% if e.comments is number %}{{ e.comments|compact }} comments{% endif %}{% if e.duration is number %} · {{ e.duration|ts }}{% endif %}{% if e.language %} · {{ LANG.get(e.language, e.language) }}{% endif %}</div>
+        {%- if e.audio and (e.audio.title or e.audio.author) %}<div class="ev-audio">♪ {{ e.audio.title or 'Original audio' }}{% if e.audio.author %} · {{ e.audio.author }}{% endif %}{% if e.audio.copyrighted %}<span class="copy" title="Copyrighted audio: brands may not be able to boost this video">©</span>{% endif %}</div>{% endif %}
+      </div>
+    </figure>
+    {%- endfor %}
+  </div>
+  {%- else %}<p class="none">No evidence videos returned for this run.</p>{% endif %}
+</section>
+
+{#- ================= 08 AUDIENCE ================= #}
+<section class="sec" id="audience">
+  <div class="sec-head"><h2><span>08</span>Audience voice</h2><p>Your most-liked comments. Purchase questions here are proof of intent you can show a brand.</p></div>
+  {%- if comments %}
+  <ul class="comments">
+    {%- for c in comments %}
+    {%- set cv = vid_links.get(c.video) if c.video else none -%}
+    <li>
+      <q dir="auto">{{ c.content }}</q>
+      <span>{% if c.handle %}@{{ c.handle }} · {% endif %}♥ {{ c.likes|compact }}{% if cv and href(cv.link) %} · <a href="{{ cv.link }}" target="_blank" rel="noopener">on your {{ cv.published|date('%d %b') }} video ↗</a>{% endif %}</span>
+    </li>
+    {%- endfor %}
+  </ul>
+  {%- else %}<p class="none">No comments returned for your recent videos.</p>{% endif %}
+</section>
+
+{%- endif %}
+
+{#- ================= FOOTER ================= #}
+<footer class="foot">
+  <div class="method">
+    <span><b>{{ r.videos_checked or 0 }}</b> of your videos read</span>
+    <span><b>{{ peers|length }}</b> peers found</span>
+    <span><b>{{ ns.peer_sp }}</b> peer sponsored posts scanned</span>
+    <span><b>{{ ns.frames }}</b> keyframes · <b>{{ ns.quotes }}</b> transcript quotes</span>
+    <span><b>{{ ori.calls if ori.calls is number else '–' }}</b> Oriane calls{% if ori.results_fetched_live is number %} · <b>{{ ori.results_fetched_live }}</b> results{% endif %}</span>
+    <span>LLM <b>{{ st.llm or r.plan_source or 'none' }}</b></span>
+    <span><b>{{ st.seconds if st.seconds is number else '–' }}</b>s</span>
+  </div>
+  <div class="foot-grid">
+    <div>
+      <h4>How the score works</h4>
+      {%- set w2 = s.weights or {'consistency': 0.2, 'engagement': 0.3, 'safety': 0.3, 'market_fit': 0.2} %}
+      <ul>
+        {%- for k in COMPS %}<li><b>{{ '%.0f'|format((w2.get(k) or 0) * 100) }}%</b> {{ CLABEL[k] }} · <span style="color:var(--muted)">{{ CHELP[k] }}</span></li>{% endfor %}
+        <li><b>Caps</b> a high-severity flag caps the score at 59, a medium one at 79.</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Method</h4>
+      <p>Your profile and last {{ r.videos_checked or 'recent' }} videos come from Oriane Connect: transcripts, keyframes, captions, audio and comments.</p>
+      <p>Peers are found with Oriane's semantic video search{% if disc.visual_asset %} and visual similarity to your keyframes{% endif %}; their recent videos are scanned for sponsored posts.</p>
+    </div>
+    <div>
+      <h4>Grades</h4>
+      <p><b style="color:var(--teal)">A</b> 80+ · brand-ready</p>
+      <p><b style="color:var(--amber)">B</b> 65–79 · pitch with small fixes</p>
+      <p><b style="color:#E8894A">C</b> 50–64 · fix the basics first</p>
+      <p><b style="color:var(--red)">D</b> below 50 · not yet</p>
+    </div>
+  </div>
+  <div class="receipts-line"><b>Every number links to a video · evidence from Oriane Connect</b><span class="mode mode-{{ mode|lower }}">{{ mode|upper }} DATA</span></div>
+  <div class="colophon">
+    <span>Castable · Brand-Readiness Report{% if handle %} · @{{ handle }}{% endif %}</span>
+    <span>run {{ run.id }}{% if r.generated %} · {{ r.generated|date('%d %b %Y %H:%M UTC') }}{% endif %}{% if public_url %} · {{ public_url }}/report/{{ run.id }}{% endif %}</span>
+  </div>
+</footer>
+</div>
+<script>
+(function () {
+  function flash(b, ok) {
+    var o = b.getAttribute('data-label') || b.textContent;
+    b.setAttribute('data-label', o);
+    b.textContent = ok ? 'Copied ✓' : 'Press Ctrl+C';
+    b.classList.toggle('copied', ok);
+    setTimeout(function () { b.textContent = o; b.classList.remove('copied'); }, 1600);
+  }
+  function fallback(text, b) {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta); flash(b, ok);
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('[data-copy]') : null;
+    if (!b) return;
+    var text = b.getAttribute('data-copy') || '';
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(function () { flash(b, true); }, function () { fallback(text, b); });
+    } else { fallback(text, b); }
+  });
+})();
+</script>
+</body>
+</html>
