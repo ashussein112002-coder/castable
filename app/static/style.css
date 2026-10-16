@@ -449,3 +449,11 @@ button.primary:hover, .demo:hover, .btn.amber:hover { background: #e6ff66; box-s
 .how3 span { font-size: 13.5px; line-height: 1.45; color: var(--text-2); }
 @media (prefers-reduced-motion: no-preference) { .how3 li { animation: rise .8s cubic-bezier(.2, .8, .2, 1) both; } .how3 li:nth-child(2) { animation-delay: .1s; } .how3 li:nth-child(3) { animation-delay: .2s; } }
 @media (max-width: 760px) { .how3 { grid-template-columns: 1fr; } }
+
+/* not-indexed: suggestions */
+.sug { display: grid; gap: 10px; margin-top: 14px; text-align: left; }
+.sug p { margin: 0; color: var(--text-2); font-size: 14px; }
+.sug-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.sug-chip { display: grid; gap: 1px; text-align: left; padding: 9px 14px; border-radius: 14px; border: 1px solid var(--amber-line); background: rgba(204, 255, 0, .08); color: var(--text); cursor: pointer; font: 600 14px var(--sans); }
+.sug-chip small { color: var(--muted); font-weight: 500; font-size: 12px; }
+.sug-chip:hover { background: rgba(204, 255, 0, .16); }

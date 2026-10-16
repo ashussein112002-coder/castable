@@ -446,7 +446,8 @@ ul.comments { list-style: none; margin: 0; padding: 0; display: grid; grid-templ
   --amber: #ccff00; --amber-2: #e6ff66; --amber-soft: rgba(204, 255, 0, .10); --amber-line: rgba(204, 255, 0, .45); --teal: #00c805; --teal-soft: rgba(0, 200, 5, .12); --teal-line: rgba(0, 200, 5, .45); --steel: #5e5ce6; --sand: #c9c9c9;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Inter, "Segoe UI", Arial, sans-serif; }
 body { background: #000; }
-.mk, .wordmark .mk { background: #ccff00; color: #000; }
+.wordmark .mk { background: #ccff00; color: #000; }
+.wordmark .mk svg { display: block; width: 30px; height: 30px; }
 .secnav a.on { background: #ccff00; color: #000; }
 .btn { background: #ccff00; border-color: #ccff00; color: #000; }
 #fx.fallback { background: radial-gradient(1200px 700px at 70% -10%, rgba(204, 255, 0, .2), transparent 60%), #000; }
@@ -458,7 +459,7 @@ body { background: #000; }
 <div class="wrap">
 
 <header class="topbar">
-  <a class="wordmark" href="/" title="Castable home"><span class="mk" aria-hidden="true">C</span><span><b>Castable</b><small>Get cast. With receipts.</small></span></a>
+  <a class="wordmark" href="/" title="Castable home"><span class="mk" aria-hidden="true"><svg viewBox="0 0 40 40" width="30" height="30"><rect width="40" height="40" rx="11" fill="#ccff00"/><path d="M15.5 11.5v17l14-8.5z" fill="#000"/></svg></span><span><b>Castable</b><small>Get cast. With receipts.</small></span></a>
   <div class="topmeta">
     <span class="mode mode-{{ mode|lower }}" title="Data source for this report">{{ mode|upper }}</span>
     {%- if r.generated %}<span>{{ r.generated|date('%d %b %Y · %H:%M UTC') }}</span>{% endif %}

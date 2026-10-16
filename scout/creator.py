@@ -32,6 +32,7 @@ from .llm import LLM
 from .oriane import OrianeBudgetExceeded, OrianeClient, OrianeCreditsExhausted
 from .scoring import _pct_rank
 from .vetting import fetch_recent_videos, vet_creator, video_link
+from .geo import region_filter
 
 STOP = set("""a an and are as at be by for from has have i in is it its of on or that the this to was we were will with you your
 me my our us they them their he she his her not no yes so if but just like really very can do did does about into than then there
@@ -87,12 +88,64 @@ def find_profile(client: OrianeClient, handle: str, platforms: list[str], log=pr
     rows = data if isinstance(data, list) else (data or {}).get("results") or []
     rows = [r for r in rows if (r.get("handle") or "").lower() == h] or rows
     if not rows:
+        rows = _profile_from_contents(client, h, platforms, log)
+    if not rows:
         log(f"profile: @{h} is not in the index for {', '.join(platforms) or 'any platform'}")
         return None
     rows.sort(key=lambda r: r.get("followersCount") or 0, reverse=True)
     p = rows[0]
     log(f"profile: @{p.get('handle')} on {p.get('platform')} · {int(p.get('followersCount') or 0):,} followers · {'verified' if p.get('isVerified') else 'not verified'}")
     return p
+
+
+def _profile_from_contents(client: OrianeClient, h: str, platforms: list[str], log=print) -> list[dict[str, Any]]:
+    """Fallback when the profile document is missing: find one of the creator's videos by handle and
+    rebuild the profile from the content's profile fields (same ids, so the rest of the flow works)."""
+    query: dict[str, Any] = {"operator": "and", "filters": {"profileHandle": {"exactMatch": {"values": [h]}}}}
+    if platforms:
+        query["filters"]["platform"] = {"includes": platforms}
+    try:
+        items = list(client.iter_contents(query, sort="publishedAt:desc", projection="full", want=1, page=1))
+    except Exception as exc:  # the fallback must never break the run
+        log(f"profile: content lookup failed ({exc})")
+        return []
+    if not items:
+        return []
+    c = items[0]
+    log(f"profile: rebuilt @{h} from its videos (profile document not indexed)")
+    return [{
+        "id": c.get("profileId"), "handle": c.get("profileHandle") or h, "platform": c.get("platform"),
+        "displayName": c.get("profileDisplayName"), "followersCount": c.get("profileFollowersCount"),
+        "followingCount": c.get("profileFollowingCount"), "postsCount": c.get("profilePostsCount"),
+        "bio": c.get("profileBio"), "isVerified": c.get("profileVerified"), "profilePictureUrl": c.get("profilePictureUrl"),
+    }]
+
+
+def suggest_indexed(client: OrianeClient, region: str, platforms: list[str], niche: str = "", n: int = 6, log=print) -> list[dict[str, Any]]:
+    """When a handle is not indexed, offer creators near the user who are: one small content query."""
+    filters: dict[str, Any] = {"format": {"includes": ["video"]}, "profileFollowersCount": {"min": 5_000, "max": 5_000_000}}
+    if platforms:
+        filters["platform"] = {"includes": platforms}
+    geo = region_filter(region)
+    if geo:
+        filters["profileLocationCoordinates"] = geo
+    query: dict[str, Any] = {"operator": "and", "filters": filters}
+    words = [w for w in re.split(r"[^\w#]+", niche or "") if len(w) > 2][:6]
+    if words:
+        query["filters"]["transcript"] = {"includesFuzzy": {"values": words, "operator": "or"}}
+    try:
+        items = list(client.iter_contents(query, sort="publishedAt:desc", projection="default", want=20, page=20))
+    except Exception as exc:
+        log(f"suggestions: lookup failed ({exc})")
+        return []
+    seen: dict[str, dict[str, Any]] = {}
+    for c in items:
+        hd = (c.get("profileHandle") or "").lower()
+        if hd and hd not in seen:
+            seen[hd] = {"handle": c.get("profileHandle"), "platform": c.get("platform"), "name": c.get("profileDisplayName"), "followers": c.get("profileFollowersCount")}
+    out = sorted(seen.values(), key=lambda x: x.get("followers") or 0, reverse=True)[:n]
+    log(f"suggestions: {len(out)} indexed creator(s) near you: {', '.join('@' + (x['handle'] or '') for x in out)}")
+    return out
 
 
 def benchmark(me: dict[str, Any], peers: list[dict[str, Any]]) -> dict[str, Any]:
@@ -250,6 +303,7 @@ def creator_report(client: OrianeClient, form: dict[str, Any], llm: LLM, log=pri
     profile = find_profile(client, handle, platforms, log=log)
     if not profile:
         report["error"] = f"@{handle} is not indexed on {', '.join(platforms)} yet"
+        report["suggestions"] = suggest_indexed(client, region, platforms, form.get("niche") or "", log=log)
         return report
     report["profile"] = profile
     pid = profile["id"]

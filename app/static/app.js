@@ -343,8 +343,17 @@
     if (run.status === "error" || rep.error || !rep.score) {
       const msg = run.error || rep.error || "The report could not be completed.";
       const notIndexed = /not indexed|no recent videos/i.test(msg);
-      $("c_result").innerHTML = `<div class="empty err"><b>${notIndexed ? "We couldn't find that handle" : "That didn't work"}</b><span>${esc(msg)}${notIndexed ? " Oriane indexes public Instagram and TikTok creators; check the spelling and the platform toggles, then try again." : ""}</span><button type="button" class="btn amber" id="c_retry">Try again</button></div>`;
+      const sug = (rep.suggestions || []).filter((x) => x && x.handle);
+      const sugHtml = sug.length ? `<div class="sug"><p>These creators near you are in the index. Tap one to run it:</p><div class="sug-list">${sug.map((x) => `<button type="button" class="sug-chip" data-h="${esc(x.handle)}" data-p="${esc(x.platform || "")}"><b>@${esc(x.handle)}</b><small>${esc(PLAT[x.platform] || x.platform || "")}${x.followers ? " · " + compact(x.followers) : ""}</small></button>`).join("")}</div></div>` : "";
+      $("c_result").innerHTML = `<div class="empty err"><b>${notIndexed ? "That handle isn't in Oriane's index yet" : "That didn't work"}</b><span>${notIndexed ? `@${esc(rep.handle || "")} has no indexed videos on ${esc((rep.platforms || []).map((x) => PLAT[x] || x).join(" or "))}. Oriane covers a large share of public Instagram and TikTok creators, not all of them.` : esc(msg)}</span>${sugHtml}<button type="button" class="btn amber" id="c_retry">Try again</button></div>`;
       $("c_retry").onclick = () => $("c_go").click();
+      document.querySelectorAll(".sug-chip").forEach((b) => {
+        b.onclick = () => {
+          $("c_handle").value = b.dataset.h;
+          if (b.dataset.p === "instagram" || b.dataset.p === "tiktok") { $("c_ig").checked = true; $("c_tt").checked = true; }
+          $("c_go").click();
+        };
+      });
       return;
     }
     const p = rep.profile || {}, sc = rep.score || {}, plan = rep.plan || {}, bench = rep.benchmark || {}, me = rep.self_audit || {};
